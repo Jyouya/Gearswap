@@ -61,4 +61,8 @@ function indi_change(indi_table, gain)
     _events.indi_change:trigger(indi_table, gain)
 end
 
+function file_unload() 
+    _events.file_unload:trigger()
+end
+
 return _events

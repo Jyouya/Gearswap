@@ -293,10 +293,11 @@ local function precast(spell, action)
     if spell.prefix == '/range' then
         local midcast_set = get_midcast(spell)
         local ammo = settings.ammo and settings.ammo.value
+        print('midcast ammo: '.. midcast_set.ammo or ammo)
         if midcast_set.ammo then
-            final_set = set_combine({ammo = midcast_set.ammo}, final_set)
+            final_set = set_combine(final_set, {ammo = midcast_set.ammo})
         elseif ammo then
-            final_set = set_combine({ammo = ammo}, final_set)
+            final_set = set_combine(final_set, {ammo = ammo})
         end
     end
 
@@ -306,8 +307,6 @@ end
 get_midcast = function(spell)
     local equip_set = {}
     local breadcrumbs = T {}
-    -- ? Since I mutated spell in precast, does it already have map?
-    -- spell.map = spell_map[spell.english] 
 
     -- Find the base set
 

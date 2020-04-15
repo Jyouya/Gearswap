@@ -218,7 +218,7 @@ end
 
 local function action_timeout()
     if pending then
-        local t = windower.ffxi.get_mob_by_id(pending.target)
+        local t = windower.ffxi.get_mob_by_id(pending.target) -- !
         if t and bit.band(t.id, 0xFF000000) then
             handle_interrupt()
         else
@@ -254,6 +254,8 @@ local function execute_pending_action()
     end
 end
 
+local process_queue
+
 local function process_pending_action() -- Called only by processqueue
     if pending.prefix == '/weaponskill' then
         if not able_to_use_weaponskill() then -- if we queue a WS, but don't have TP, it does an RA
@@ -287,7 +289,7 @@ local function buff_active(id)
     return false
 end
 
-local function process_queue()
+process_queue = function()
     if completion then
         pending = nil
         completion = false
@@ -344,7 +346,7 @@ events.pretarget:register(function(spell)
         spell.name and pending.target == spell.target.id ) and enabled.value then
         cancel_spell()
         if pending then
-            if spell.name == 'Ranged' then
+            if spell.name == 'Ranged' and spell.target.id then
                 target = spell.target.id
                 completion = true
                 windower.send_command('autoface ' .. target)
