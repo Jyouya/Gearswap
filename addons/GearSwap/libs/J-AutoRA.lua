@@ -341,12 +341,12 @@ local function add_spell_to_queue(spell)
     })
 end
 
-events.pretarget:register(function(spell)
+events.precast:register(function(spell)
     if not (pending and pending.prefix == spell.prefix and pending.name ==
         spell.name and pending.target == spell.target.id ) and enabled.value then
         cancel_spell()
-        if pending then
-            if spell.name == 'Ranged' and spell.target.id then
+        if pending and spell.target.id then
+            if spell.name == 'Ranged' then
                 target = spell.target.id
                 completion = true
                 windower.send_command('autoface ' .. target)

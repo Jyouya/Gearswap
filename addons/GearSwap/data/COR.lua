@@ -32,7 +32,7 @@ Camulus.DW = {
     name = "Camulus's Mantle",
     augments = {
         'DEX+20', 'Accuracy+20 Attack+20', 'Accuracy+10', '"Dual Wield"+10',
-        'Phys. dmg. taken-2%'
+        'Phys. dmg. taken-10%'
     }
 }
 Camulus.rSTP = {
@@ -329,7 +329,6 @@ settings.dual_wield_level = M {
 settings.roll_gear = M(true, 'Use ranged/weapon swaps for rolling')
 
 haste.change:register(function(gearswap_vars_loaded)
-    print('haste change')
     if not midaction() then
         if gearswap_vars_loaded then
             events.update:trigger()
@@ -362,17 +361,15 @@ rules.midcast:append({
 })
 
 -- Apply TH gear over midshot + swaps
+-- ! Known issue with TH layering over swaps
+-- ! Triple shot + TH results in only TH being applied
 rules.midcast:append({
     test = function(equip_set, spell)
         if spell.prefix == '/range' and TH.Result then
-            equip_set.swaps = table.update(equip_set.swaps, {
-                table.update(sets.TreasureHunter,
-                             {test = function() return true end})
-            })
-            -- equip_set.swaps = {
-            --     unpack(equip_set.swaps), -- ! Unpack doesn't work like JS spread
-            --     {test = function() return true end, unpack(sets.TreasureHunter)}
-            -- }
+            equip_set.swaps = equip_set.swaps or {}
+            table.append(equip_set.swaps, table.update(sets.TreasureHunter, {
+                test = function() return true end
+            }))
         end
     end
 })
@@ -435,10 +432,10 @@ rules.engaged:append({
     test = function(equip_set, spell)
         print('th: ' .. (TH.Result and 'true' or 'false'))
         if TH.Result then
-            equip_set.swaps = table.update(equip_set.swaps, {
-                table.update(sets.TreasureHunter,
-                             {test = function() return true end})
-            })
+            equip_set.swaps = equip_set.swaps or {}
+            table.append(equip_set.swaps, table.update(sets.TreasureHunter, {
+                test = function() return true end
+            }))
         end
     end
 })
@@ -629,7 +626,7 @@ events.load:register(function()
                 {
                     test = pred_factory.buff_active(581),
                     legs = Adhemar.Legs.PathD,
-                    waist = "Yameya Belt"
+                    waist = "Yemaya Belt"
                 }, {
                     test = function()
                         return buffactive[581] and flurry_level == 2
@@ -651,7 +648,7 @@ events.load:register(function()
         legs = Herc.Legs.LastStand,
         feet = "Lanun Bottes +3",
         neck = "Fotia Gorget",
-        waist = "Light Belt",
+        waist = "Fotia Belt",
         left_ear = "Moonshade Earring",
         right_ear = "Ishvara Earring",
         left_ring = "Dingir Ring",
@@ -722,7 +719,7 @@ events.load:register(function()
         ring1 = "Dingir Ring",
         ring2 = "Ilabrat Ring",
         back = Camulus.LeadenSalute,
-        waist = "Light Belt",
+        waist = "Fotia Belt",
         swaps = {
             {test = pred_factory.orpheus, waist = 'Orpheus\'s Sash'},
             {test = pred_factory.hachirin, waist = 'Hachirin-no-Obi'}
@@ -826,7 +823,7 @@ events.load:register(function()
         }
     }
 
-    sets.midcast.RA.Mid = set_combine(sets.midcast.RA, {
+    sets.midcast.RA.Mid = set_combine(sets.midcast.RA.Normal, {
         ammo = "Devastating Bullet",
         ring1 = "Hajduk Ring +1",
         waist = "K. Kachina Belt +1"
@@ -879,7 +876,7 @@ events.load:register(function()
         legs = "Samnuha Tights",
         feet = "Malignance Boots",
         neck = "Iskur Gorget",
-        left_ear = "Dignitary's Earring", -- "Cessance Earring",
+        left_ear = "Cessance Earring",
         right_ear = "Telos Earring",
         ring1 = "Chirich Ring +1",
         ring2 = "Epona's Ring",
@@ -985,8 +982,17 @@ local function get_icons(mode)
     return imap(mode, function(el)
         -- TODO: allow for /graphics/JOB/item_name.png to take priority
         local item_name = type(el) == 'table' and el.name or el
-        local img = get_icon(item_name)
         local value = type(el) == 'table' and el.alias or item_name
+        local img
+        if windower.file_exists(windower.addon_path .. '/data/graphics/' ..
+                                    item_name) then
+            img = windower.addon_path .. '/data/graphics/' .. item_name
+        elseif windower.file_exists(
+            windower.addon_path .. '/data/COR/graphics/' .. item_name) then
+            img = windower.addon_path .. '/data/COR/graphics/' .. item_name
+        else
+            img = get_icon(item_name)
+        end
         return {img = img, value = tostring(value)}
     end)
 end

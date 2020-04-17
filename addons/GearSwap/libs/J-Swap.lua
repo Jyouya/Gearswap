@@ -5,7 +5,7 @@ local events = require('J-Swap-Events')
 local command = require('J-Swap-Command')
 
 spell_map = spell_map or require('J-Map')
-sets = sets or {
+sets = table.update({
     idle = {},
     engaged = {},
     item = {},
@@ -13,7 +13,7 @@ sets = sets or {
     WS = {},
     precast = {RA = {}},
     midcast = {RA = {}}
-}
+}, sets or {})
 settings = settings or {}
 rules = table.update({
     precast = T {},
