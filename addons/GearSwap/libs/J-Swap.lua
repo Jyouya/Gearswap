@@ -63,12 +63,6 @@ local function get_max_recast(spell)
     end
 end
 
--- TODO: remove this
-local function resolve_mode_alias(value)
-    -- return type(value) == 'table' and value.value or value
-    return value
-end
-
 local magic_prefixes = S {'/magic', '/ninjutsu', '/song'}
 
 local pretarget
@@ -274,9 +268,6 @@ local function precast(spell, action)
     if main_hand or range then
         local swap_managed_weapon = equip_set.swap_managed_weapon
         if not (swap_managed_weapon and swap_managed_weapon(spell, action)) then
-            main_hand = resolve_mode_alias(main_hand)
-            off_hand = resolve_mode_alias(off_hand)
-            range = resolve_mode_alias(range)
             if main_hand then
                 final_set = set_combine(final_set, {main = main_hand})
             end
@@ -293,7 +284,7 @@ local function precast(spell, action)
     if spell.prefix == '/range' then
         local midcast_set = get_midcast(spell)
         local ammo = settings.ammo and settings.ammo.value
-        print('midcast ammo: '.. midcast_set.ammo or ammo)
+        print('midcast ammo: ' .. midcast_set.ammo or ammo)
         if midcast_set.ammo then
             final_set = set_combine(final_set, {ammo = midcast_set.ammo})
         elseif ammo then
@@ -457,9 +448,6 @@ get_midcast = function(spell)
     if main_hand or range then
         local swap_managed_weapon = equip_set.swap_managed_weapon
         if not (swap_managed_weapon and swap_managed_weapon(spell)) then
-            main_hand = resolve_mode_alias(main_hand)
-            off_hand = resolve_mode_alias(off_hand)
-            range = resolve_mode_alias(range)
             if main_hand then
                 final_set = set_combine(final_set, {main = main_hand})
             end
@@ -552,13 +540,20 @@ local function get_idle_set()
         end
     end
 
-    main_hand = resolve_mode_alias(main_hand)
-    off_hand = resolve_mode_alias(off_hand)
-    range = resolve_mode_alias(range)
-
-    if main_hand then final_set = set_combine(final_set, {main = main_hand}) end
-    if off_hand then final_set = set_combine(final_set, {sub = off_hand}) end
-    if range then final_set = set_combine(final_set, {range = range}) end
+    if main_hand or range then
+        local swap_managed_weapon = equip_set.swap_managed_weapon
+        if not (swap_managed_weapon and swap_managed_weapon()) then
+            if main_hand then
+                final_set = set_combine(final_set, {main = main_hand})
+            end
+            if off_hand then
+                final_set = set_combine(final_set, {sub = off_hand})
+            end
+            if range then
+                final_set = set_combine(final_set, {range = range})
+            end
+        end
+    end
 
     return final_set
 end
@@ -628,13 +623,20 @@ local function get_engaged_set()
         end
     end
 
-    main_hand = resolve_mode_alias(main_hand)
-    off_hand = resolve_mode_alias(off_hand)
-    range = resolve_mode_alias(range)
-
-    if main_hand then final_set = set_combine(final_set, {main = main_hand}) end
-    if off_hand then final_set = set_combine(final_set, {sub = off_hand}) end
-    if range then final_set = set_combine(final_set, {range = range}) end
+    if main_hand or range then
+        local swap_managed_weapon = equip_set.swap_managed_weapon
+        if not (swap_managed_weapon and swap_managed_weapon()) then
+            if main_hand then
+                final_set = set_combine(final_set, {main = main_hand})
+            end
+            if off_hand then
+                final_set = set_combine(final_set, {sub = off_hand})
+            end
+            if range then
+                final_set = set_combine(final_set, {range = range})
+            end
+        end
+    end
 
     return final_set
 end

@@ -111,6 +111,70 @@ function predicate_factory.equipped(slot, item_name)
     end
 end
 
+function predicate_factory.hpp_lt(value)
+    return function() return player.hpp < value end
+end
+
+function predicate_factory.hpp_lte(value)
+    return function() return player.hpp <= value end
+end
+
+function predicate_factory.hpp_gt(value)
+    return function() return player.hpp > value end
+end
+
+function predicate_factory.hpp_gte(value)
+    return function() return player.hpp >= value end
+end
+
+function predicate_factory.hp_lt(value)
+    return function() return player.hp < value end
+end
+
+function predicate_factory.hp_lte(value)
+    return function() return player.hp <= value end
+end
+
+function predicate_factory.hp_gt(value)
+    return function() return player.hp > value end
+end
+
+function predicate_factory.hp_gte(value)
+    return function() return player.hp >= value end
+end
+
+function predicate_factory.mpp_lt(value)
+    return function() return player.mpp < value end
+end
+
+function predicate_factory.mpp_lte(value)
+    return function() return player.mpp <= value end
+end
+
+function predicate_factory.mpp_gt(value)
+    return function() return player.mpp > value end
+end
+
+function predicate_factory.mpp_gte(value)
+    return function() return player.mpp >= value end
+end
+
+function predicate_factory.mp_lt(value)
+    return function() return player.mp < value end
+end
+
+function predicate_factory.mp_lte(value)
+    return function() return player.mp <= value end
+end
+
+function predicate_factory.mp_gt(value)
+    return function() return player.mp > value end
+end
+
+function predicate_factory.mp_gte(value)
+    return function() return player.mp >= value end
+end
+
 function predicate_factory.p_and(...)
     local args = {...}
     return function()

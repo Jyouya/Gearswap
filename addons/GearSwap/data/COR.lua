@@ -386,7 +386,8 @@ rules.engaged:append({
         local sub = settings.sub.value
         local sub_id = item_id_memo[type(sub) == 'table' and sub.name or sub]
         return (player.sub_job == 'NIN' or player.sub_job == 'DNC') and
-                   res.items[sub_id].slot ~= 2 -- a slot value of 2 indicates a shield or grip
+                   res.items[sub_id].slots:contains(0) and
+                   res.items[sub_id].slots:contains(1)
     end,
     key = function()
         if settings.dual_wield_mode.value == 'Auto' then
@@ -409,7 +410,8 @@ rules.idle:append({
         local sub = settings.sub.value
         local sub_id = item_id_memo[type(sub) == 'table' and sub.name or sub]
         return (player.sub_job == 'NIN' or player.sub_job == 'DNC') and
-                   res.items[sub_id].slot ~= 2 -- a slot value of 2 indicates a shield or grip
+                   res.items[sub_id].slots:contains(0) and
+                   res.items[sub_id].slots:contains(1)
     end,
     key = function()
         if settings.dual_wield_mode.value == 'Auto' then
@@ -482,7 +484,7 @@ events.load:register(function()
 
     sets.JA['Snake Eye'] = {legs = "Lanun Trews"}
     sets.JA['Wild Card'] = {feet = "Lanun Bottes +3"}
-    sets.JA['Random Deal'] = {body = "Lunan Frac +3"}
+    sets.JA['Random Deal'] = {body = "Lanun Frac +3"}
     sets.JA.Fold = {
         swaps = {
             {
@@ -518,7 +520,7 @@ events.load:register(function()
     sets.JA["Caster's Roll"] = set_combine(sets.JA['Phantom Roll'],
                                            {legs = "Chas. Culottes +1"})
     sets.JA["Courser's Roll"] = set_combine(sets.JA['Phantom Roll'],
-                                            {feet = "Chaseur's Bottes +1"})
+                                            {feet = "Chasseur's Bottes +1"})
     sets.JA["Blitzer's Roll"] = set_combine(sets.JA['Phantom Roll'],
                                             {head = "Chasseur's Tricorne +1"})
     sets.JA["Tactician's Roll"] = set_combine(sets.JA['Phantom Roll'],
@@ -985,11 +987,13 @@ local function get_icons(mode)
         local value = type(el) == 'table' and el.alias or item_name
         local img
         if windower.file_exists(windower.addon_path .. '/data/graphics/' ..
-                                    item_name) then
-            img = windower.addon_path .. '/data/graphics/' .. item_name
+                                    item_name .. '.png') then
+            img = windower.addon_path .. '/data/graphics/' .. item_name ..
+                      '.png'
         elseif windower.file_exists(
-            windower.addon_path .. '/data/COR/graphics/' .. item_name) then
-            img = windower.addon_path .. '/data/COR/graphics/' .. item_name
+            windower.addon_path .. '/data/graphics/COR/' .. item_name .. '.png') then
+            img = windower.addon_path .. '/data/graphics/COR/' .. item_name ..
+                      '.png'
         else
             img = get_icon(item_name)
         end
