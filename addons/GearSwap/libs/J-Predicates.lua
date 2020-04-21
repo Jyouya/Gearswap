@@ -33,7 +33,7 @@ do
         Light = "Dark",
         Dark = "Light"
     }
-    local function bonus_tier(spell)
+    local function hachirin_bonus_tier(spell)
         local spell_element = spell and spell.element
         local bonus = 0
 
@@ -51,18 +51,43 @@ do
         return bonus
     end
 
-    function predicate_factory.weather_day_bonus(level)
+    local function elemental_bonus_tier(spell)
+        local spell_element = spell and spell.element
+        local bonus = 0
+        if world.weather_element == spell_element then
+            bonus = res.weather[world.weather_id].intensity
+        end
+
+        if world.day_element == spell.element then bonus = bonus + 1 end
+        return bonus
+    end
+
+    function predicate_factory.hachirin_bonus(level)
         level = level or 1
-        return function(spell) return bonus_tier(spell) >= level end
+        return function(spell) return hachirin_bonus_tier(spell) >= level end
     end
 
     function predicate_factory.hachirin(spell)
-        local bonus = bonus_tier(spell)
+        local bonus = hachirin_bonus_tier(spell)
         return bonus >= 2 or (bonus > 0 and spell.target.distance > 7)
     end
 
     function predicate_factory.orpheus(spell)
-        return bonus_tier() < 2 and spell.target.distance <= 7
+        return hachirin_bonus_tier(spell) < 2 and spell.target.distance <= 7
+    end
+
+    function predicate_factory.elemental_obi_bonus(level)
+        level = level or 1
+        return function(spell) return elemental_bonus_tier(spell) >= level end
+    end
+
+    function predicate_factory.orpheus_ele(spell)
+        return elemental_bonus_tier(spell) < 2 and spell.target.distance <= 7
+    end
+
+    function predicate_factory.elemental_obi(spell) 
+        local bonus = elemental_bonus_tier(spell)
+        return bonus >= 2 or (bonus > 0 and spell.target.distance > 7)
     end
 end
 

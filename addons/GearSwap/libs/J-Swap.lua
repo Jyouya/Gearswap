@@ -36,6 +36,82 @@ do
     end
 end
 
+local raw_equip = equip
+local equip
+do
+    local n = 0
+    local function normalize_slot_names(gear_set)
+
+        local new_set = table.copy(gear_set, false)
+        new_set.left_ear = gear_set.left_ear or gear_set.ear1
+        new_set.right_ear = gear_set.right_ear or gear_set.ear2
+        new_set.left_ring = gear_set.left_ring or gear_set.ring1
+        new_set.right_ring = gear_set.right_ring or gear_set.ring2
+        new_set.ear1, new_set.ear2, new_set.ring1, new_set.ring2 = nil, nil, nil, nil
+        return new_set
+    end
+    local prev_set = {}
+    equip = function(set)
+        local final_set = normalize_slot_names(set)
+
+        if final_set.left_ear == prev_set.right_ear or final_set.right_ear ==
+            prev_set.left_ear or
+            (type(final_set.left_ear) == 'table' and type(prev_set.right_ear) ==
+                'table' and table.equals(final_set.left_ear, prev_set.right_ear)) or
+            (type(final_set.right_ear) == 'table' and type(prev_set.left_ear) ==
+                'table' and table.equals(final_set.right_ear, prev_set.left_ear)) then
+            final_set.left_ear, final_set.right_ear = final_set.right_ear,
+                                                      final_set.left_ear
+        end
+
+        if final_set.left_ring == prev_set.right_ring or final_set.right_ring ==
+            prev_set.left_ring or
+            (type(final_set.left_ring) == 'table' and type(prev_set.right_ring) ==
+                'table' and
+                table.equals(final_set.left_ring, prev_set.right_ring)) or
+            (type(final_set.right_ring) == 'table' and type(prev_set.left_ring) ==
+                'table' and
+                table.equals(final_set.right_ring, prev_set.left_ring)) then
+            final_set.left_ring, final_set.right_ring = final_set.right_ring,
+                                                        final_set.left_ring
+        end
+
+        -- If main and sub both need to be swapped, it isn't possible
+        if final_set.main and final_set.sub and prev_set.main and prev_set.sub then
+            if final_set.main == prev_set.sub then
+                if type(final_set.main) == 'string' then
+                    final_set.main = {name = final_set.main}
+                end
+                final_set.main.priority = 14
+                if type(final_set.sub) == 'string' then
+                    final_set.sub = {name = final_set.sub}
+                end
+                final_set.sub.priority = 15
+            elseif final_set.sub == prev_set.main then
+                if type(final_set.main) == 'string' then
+                    final_set.main = {name = final_set.main}
+                end
+                final_set.main.priority = 15
+                if type(final_set.sub) == 'string' then
+                    final_set.sub = {name = final_set.sub}
+                end
+                final_set.sub.priority = 14
+            elseif type(final_set.main) == 'table' and type(prev_set.sub) ==
+                'table' and table.equals(final_set.main, prev_set.sub) then
+                final_set.main.priority = 14
+                final_set.sub.priority = 15
+            elseif type(final_set.sub) == 'table' and type(prev_set.main) ==
+                'table' and table.equals(final_set.sub, prev_set.main) then
+                final_set.sub.priority = 14
+                final_set.main.priority = 15
+            end
+        end
+
+        prev_set = final_set
+        raw_equip(final_set)
+    end
+end
+
 local get_midcast
 local player_incapacitated
 
@@ -170,13 +246,11 @@ local function precast(spell, action)
     -- Main/sub/range modifiers (mostly for aftermath sets)
 
     local main_hand = settings.main and settings.main.value
-    local off_hand
+    local off_hand = settings.sub and settings.sub.value
 
     if main_hand and equip_set[main_hand] then
         equip_set = equip_set[main_hand]
         breadcrumbs:append(main_hand)
-
-        local off_hand = settings.sub and settings.sub.value
 
         if off_hand and equip_set[off_hand] then
             equip_set = equip_set[off_hand]
@@ -268,6 +342,7 @@ local function precast(spell, action)
     if main_hand or range then
         local swap_managed_weapon = equip_set.swap_managed_weapon
         if not (swap_managed_weapon and swap_managed_weapon(spell, action)) then
+            print('precast: debug')
             if main_hand then
                 final_set = set_combine(final_set, {main = main_hand})
             end
@@ -308,7 +383,7 @@ get_midcast = function(spell)
         equip_set = sets.midcast
         breadcrumbs:append('midcast')
         category1 = 'Magic'
-    elseif spell.type == 'JobAbility' then
+    elseif spell.prefix == '/jobability' then
         return
     elseif spell.prefix == '/range' then
         equip_set = sets.midcast.RA
@@ -349,13 +424,11 @@ get_midcast = function(spell)
     -- Main/sub/range modifiers (mostly for aftermath sets)
 
     local main_hand = settings.main and settings.main.value
-    local off_hand
+    local off_hand = settings.sub and settings.sub.value
 
     if main_hand and equip_set[main_hand] then
         equip_set = equip_set[main_hand]
         breadcrumbs:append(main_hand)
-
-        off_hand = settings.sub and settings.sub.value
 
         if off_hand and equip_set[off_hand] then
             equip_set = equip_set[off_hand]
@@ -448,6 +521,7 @@ get_midcast = function(spell)
     if main_hand or range then
         local swap_managed_weapon = equip_set.swap_managed_weapon
         if not (swap_managed_weapon and swap_managed_weapon(spell)) then
+            print('midcast: debug', main_hand, off_hand)
             if main_hand then
                 final_set = set_combine(final_set, {main = main_hand})
             end
@@ -473,7 +547,7 @@ get_midcast = function(spell)
     return final_set
 end
 
-local function midcast(spell) equip(get_midcast(spell)) end
+local function midcast(spell) equip(get_midcast(spell) or {}) end
 
 local function get_idle_set()
     local equip_set = sets.idle

@@ -30,7 +30,7 @@ local item_id_memo = setmetatable({}, {
 do
     settings.sub = M {['description'] = 'Off Hand', 'Genmei Shield'}
     local subs = T {
-        'Ukaldi', 'Sindri', 'Izcalli', 'Daybreak', 'Genmei Shield',
+        'Ukaldi', 'Sindri', 'Izcalli', 'Daybreak', 'Genmei Shield', 'Ammurapi Shield',
         'Bloodrain Strap', 'Khonsu'
     }
     local function pack_sub()
@@ -167,8 +167,6 @@ local function dw_test()
 
     local main_id = item_id_memo[type(main) == 'table' and main.name or main]
     local sub_id = item_id_memo[type(sub) == 'table' and sub.name or sub]
-    print('1h main: ', res.items[main_id].slots:contains(0) and res.items[main_id].slots:contains(1),
-          res.items[main_id].slots)
     return (player.sub_job == 'NIN' or player.sub_job == 'DNC') and
                res.items[main_id].slots:contains(0) and
                res.items[main_id].slots:contains(1) and
@@ -187,7 +185,6 @@ local function dw_level()
         end
         settings.dual_wield_level:set(tostring(dw_level))
     end
-    print(settings.dual_wield_level.value)
     return 'DW' .. tostring(settings.dual_wield_level.value)
 end
 rules.engaged:append({test = dw_test, key = dw_level})
@@ -259,7 +256,7 @@ events.load:register(function()
         sets.idle = {
             main = 'Malignance Pole',
             sub = 'Khonsu',
-            ammo = 'Staunch Tathlum',
+            ammo = 'Staunch Tathlum +1',
             head = 'Inyanga Tiara +2',
             body = 'Piety Briault +3',
             hands = 'Inyan. Dastanas +2',
@@ -342,6 +339,12 @@ events.load:register(function()
 
     sets.precast.Utsusemi = set_combine(sets.precast, {neck = 'Magoraga Beads'})
 
+    sets.precast.Dispelga = set_combine(sets.precast, {
+        main = 'Daybreak',
+        sub = 'Maxentius',
+        swap_managed_weapon = function() return true end
+    })
+
     sets.JA = {}
     sets.JA.Benediction = {body = 'Piety Briault +3'}
     sets.JA.Devotion = {head = 'Piety Cap +3'}
@@ -380,7 +383,7 @@ events.load:register(function()
         back = gear.Alaunus.Meva,
         swaps = {
             {
-                test = pred_factory.weather_day_bonus(1),
+                test = pred_factory.elemental_obi_bonus(1),
                 waist = 'Korin Obi' -- Hachirin-no-Obi
             }, {
                 test = function()
@@ -490,7 +493,7 @@ events.load:register(function()
     sets.midcast.BoostSpell = {
         main = 'Gada',
         sub = 'Ammurapi Shield',
-        ammo = 'Staunch Tathlum',
+        ammo = 'Staunch Tathlum +1',
         head = gear.Telchine.Head.Enhancing,
         body = gear.Telchine.Body.Enhancing,
         hands = 'Inyan. Dastanas +2',
@@ -526,6 +529,14 @@ events.load:register(function()
             }
         }
     }
+
+    sets.midcast.Shellra = set_combine(sets.midcast['Enhancing Magic'], {
+        left_ring = 'Sheltered Ring'
+    })
+
+    sets.midcast.Protectra = set_combine(sets.midcast['Enhancing Magic'], {
+        left_ring = 'Sheltered Ring'
+    })
 
     sets.midcast.BarElement = {
         main = 'Gada',
@@ -603,7 +614,7 @@ events.load:register(function()
                                        {feet = 'Ebers Duckbills'})
 
     sets.SIRD = {
-        ammo = 'Staunch Tathlum',
+        ammo = 'Staunch Tathlum +1',
         head = gear.Kaykaus.Head.PathC,
         hands = 'Chironic Gloves',
         feet = 'Theophany Duckbills +3',
@@ -678,6 +689,12 @@ events.load:register(function()
     sets.midcast.Repose = table.copy(sets.midcast.MndEnfeebles)
     sets.midcast.Stun = table.copy(sets.midcast.MndEnfeebles)
 
+    sets.midcast.Dispelga = set_combine(sets.midcast['Enfeebling Magic'], {
+        main = 'Daybreak',
+        sub = 'Maxentius',
+        swap_managed_weapon = function() return true end
+    })
+
     sets.midcast['Divine Magic'] = table.copy(sets.midcast['Enfeebling Magic'])
     sets.midcast['Dark Magic'] = set_combine(sets.midcast['Divine Magic'], {
         waist = 'Fucho-no-Obi',
@@ -710,7 +727,15 @@ events.load:register(function()
     }
 
     sets.engaged.DW9 = set_combine(sets.engaged, {
-        back = gear.Alaunus.DW -- Make a 9 DW cape
+        back = gear.Alaunus.DW, -- Make a 9 DW cape
+        swaps = {
+            {
+                test = pred_factory.buff_active('Aftermath: Lv.3'),
+                -- back = gear.Alaunus.STP,
+                -- left_ear = 'Eabani Earring',
+                -- right_ear = 'Suppanomimi'
+            }
+        }
     })
 
     sets.engaged.DW11 = set_combine(sets.engaged, {
@@ -875,9 +900,10 @@ events.load:register(function()
         right_ear = 'Malignance Earring',
         left_ring = 'Weatherspoon Ring',
         right_ring = 'Metamorph Ring +1',
+        back = gear.Alaunus.MND_Enfeeble,
         swaps = {
-            {test = pred_factory.orpheus, waist = 'Orpheus\'s Sash'},
-            {test = pred_factory.hachirin, waist = 'Korin Obi'},
+            {test = pred_factory.orpheus_ele, waist = 'Orpheus\'s Sash'},
+            {test = pred_factory.elemental_obi, waist = 'Korin Obi'},
             {test = pred_factory.etp_gt(2750), left_ear = 'Friomisi Earring'}
         }
     }
@@ -968,9 +994,10 @@ events.load:register(function()
         right_ear = 'Malignance Earring',
         left_ring = 'Weatherspoon Ring',
         right_ring = 'Metamorph Ring +1',
+        back = gear.Alaunus.STR_WSD, -- Make a str macc/matk wsd cape at some point
         swaps = {
-            {test = pred_factory.orpheus, waist = 'Orpheus\'s Sash'},
-            {test = pred_factory.hachirin, waist = 'Korin Obi'},
+            {test = pred_factory.orpheus_ele, waist = 'Orpheus\'s Sash'},
+            {test = pred_factory.elemental_obi, waist = 'Anrin Obi'},
             {test = pred_factory.etp_gt(2750), left_ear = 'Friomisi Earring'}
         }
     }
@@ -1028,7 +1055,6 @@ do
     local main_proxy = M {'Auto', unpack(settings.main)}
     main_proxy.on_change:register(function(m)
         if m.value == 'Auto' then
-            print('weapons set to auto')
             settings.lock_weapons:unset()
             sub_button:hide()
         else

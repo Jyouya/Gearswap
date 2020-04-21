@@ -517,15 +517,15 @@ events.load:register(function()
     }
     sets.JA['Double-Up'] = {ring1 = "Luzaf's Ring"}
 
-    sets.JA["Caster's Roll"] = set_combine(sets.JA['Phantom Roll'],
+    sets.JA["Caster's Roll"] = set_combine(sets.JA.CorsairRoll,
                                            {legs = "Chas. Culottes +1"})
-    sets.JA["Courser's Roll"] = set_combine(sets.JA['Phantom Roll'],
+    sets.JA["Courser's Roll"] = set_combine(sets.JA.CorsairRoll,
                                             {feet = "Chasseur's Bottes +1"})
-    sets.JA["Blitzer's Roll"] = set_combine(sets.JA['Phantom Roll'],
+    sets.JA["Blitzer's Roll"] = set_combine(sets.JA.CorsairRoll,
                                             {head = "Chasseur's Tricorne +1"})
-    sets.JA["Tactician's Roll"] = set_combine(sets.JA['Phantom Roll'],
+    sets.JA["Tactician's Roll"] = set_combine(sets.JA.CorsairRoll,
                                               {body = "Chasseur's Frac +1"})
-    sets.JA["Allies' Roll"] = set_combine(sets.JA['Phantom Roll'],
+    sets.JA["Allies' Roll"] = set_combine(sets.JA.CorsairRoll,
                                           {hands = "Chasseur's Gants +1"})
 
     sets.JA.CorsairShot = {}
