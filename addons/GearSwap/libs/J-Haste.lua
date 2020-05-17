@@ -1,5 +1,5 @@
 local packets = require('packets')
-local res = require('resources')
+-- local res = require('resources')
 require('tables')
 require('sets')
 

@@ -3,6 +3,7 @@ require('Modes')
 require('sets')
 local events = require('J-Swap-Events')
 local command = require('J-Swap-Command')
+res = require('Resources')
 
 spell_map = spell_map or require('J-Map')
 sets = table.update({
@@ -22,6 +23,13 @@ rules = table.update({
     engaged = T {}
 }, rules or {})
 
+local function set_timeout(cb, delay)
+    local run = true
+    local co =
+        coroutine.schedule(function() if run then cb() end end, delay)
+    return co, function() run = false end
+end
+
 raw_set_combine = set_combine
 do
     local combinable_keys = S {'swap_managed_weapon', 'swaps'}
@@ -39,7 +47,6 @@ end
 local raw_equip = equip
 local equip
 do
-    local n = 0
     local function normalize_slot_names(gear_set)
 
         local new_set = table.copy(gear_set, false)
@@ -47,7 +54,8 @@ do
         new_set.right_ear = gear_set.right_ear or gear_set.ear2
         new_set.left_ring = gear_set.left_ring or gear_set.ring1
         new_set.right_ring = gear_set.right_ring or gear_set.ring2
-        new_set.ear1, new_set.ear2, new_set.ring1, new_set.ring2 = nil, nil, nil, nil
+        new_set.ear1, new_set.ear2, new_set.ring1, new_set.ring2 = nil, nil,
+                                                                   nil, nil
         return new_set
     end
     local prev_set = {}
@@ -186,6 +194,9 @@ do
     end
 end
 
+local clear_timeout = function() end
+local on_timeout = function() windower.send_command('gs c update') end
+
 local function precast(spell, action)
     local equip_set = {}
     local breadcrumbs = T {}
@@ -299,7 +310,7 @@ local function precast(spell, action)
         breadcrumbs:append(spell_setting)
     end
 
-    equip_set = table.copy(equip_set) -- shallow copy the set, so that rules can mutate it
+    equip_set = table.copy(equip_set) -- copy the set, so that rules can mutate it
 
     -- User defined gear rules
     for _, rule in ipairs(rules.precast) do
@@ -313,7 +324,7 @@ local function precast(spell, action)
         end
     end
 
-    print(breadcrumbs:concat('.'))
+    -- print(breadcrumbs:concat('.'))
 
     -- If a set is empty, go back up the tree till a set has gear
     if empty_set(equip_set) then -- if it contains no gear
@@ -342,7 +353,6 @@ local function precast(spell, action)
     if main_hand or range then
         local swap_managed_weapon = equip_set.swap_managed_weapon
         if not (swap_managed_weapon and swap_managed_weapon(spell, action)) then
-            print('precast: debug')
             if main_hand then
                 final_set = set_combine(final_set, {main = main_hand})
             end
@@ -359,7 +369,7 @@ local function precast(spell, action)
     if spell.prefix == '/range' then
         local midcast_set = get_midcast(spell)
         local ammo = settings.ammo and settings.ammo.value
-        print('midcast ammo: ' .. midcast_set.ammo or ammo)
+        -- print('midcast ammo: ' .. midcast_set.ammo or ammo)
         if midcast_set.ammo then
             final_set = set_combine(final_set, {ammo = midcast_set.ammo})
         elseif ammo then
@@ -368,6 +378,8 @@ local function precast(spell, action)
     end
 
     equip(final_set)
+
+    _, clear_timeout = set_timeout(on_timeout, spell.cast_time or 2)
 end
 
 get_midcast = function(spell)
@@ -492,7 +504,7 @@ get_midcast = function(spell)
         end
     end
 
-    print(breadcrumbs:concat('.'))
+    -- print(breadcrumbs:concat('.'))
 
     -- If a set is empty, go back up the tree till a set has gear
     if empty_set(equip_set) then -- if it contains no gear
@@ -521,7 +533,6 @@ get_midcast = function(spell)
     if main_hand or range then
         local swap_managed_weapon = equip_set.swap_managed_weapon
         if not (swap_managed_weapon and swap_managed_weapon(spell)) then
-            print('midcast: debug', main_hand, off_hand)
             if main_hand then
                 final_set = set_combine(final_set, {main = main_hand})
             end
@@ -617,6 +628,7 @@ local function get_idle_set()
     if main_hand or range then
         local swap_managed_weapon = equip_set.swap_managed_weapon
         if not (swap_managed_weapon and swap_managed_weapon()) then
+            -- print('main:', main_hand, 'sub:', off_hand)
             if main_hand then
                 final_set = set_combine(final_set, {main = main_hand})
             end
@@ -632,6 +644,17 @@ local function get_idle_set()
     return final_set
 end
 
+local item_id_memo = setmetatable({}, {
+    __index = function(t, k)
+        t[k] = res.items:with('en', k).id
+        return t[k]
+    end
+})
+local function item_skill(item)
+    local item_name = type(item) == 'table' and item.name or item
+    local item_id = item_id_memo[item_name]
+    return res.skills[res.items[item_id].skill]
+end
 local function get_engaged_set()
     local equip_set = sets.engaged
     local breadcrumbs = T {'engaged'}
@@ -652,6 +675,12 @@ local function get_engaged_set()
             equip_set = equip_set[off_hand]
             breadcrumbs:append(off_hand)
         end
+    else
+        local main_hand_skill = item_skill(main_hand)
+        if equip_set[main_hand_skill] then
+            equip_set = equip_set[main_hand_skill]
+        end
+
     end
 
     local range = settings.range and settings.range.value or
@@ -660,6 +689,33 @@ local function get_engaged_set()
     if range and equip_set[range] then
         equip_set = equip_set[range]
         breadcrumbs:append(range)
+    end
+
+    -- Aftermath sets
+
+    local aftermath_level = 0
+    if buffactive['Aftermath: Lv.3'] then
+        aftermath_level = 3
+    elseif buffactive['Aftermath: Lv.2'] then
+        aftermath_level = 2
+    elseif buffactive['Aftermath: Lv.1'] or buffactive['Aftermath'] then
+        aftermath_level = 1
+    end
+
+    if aftermath_level == 3 and equip_set.AM3 then
+        equip_set = equip_set.AM3
+        breadcrumbs:append('AM3')
+    elseif aftermath_level >= 2 and equip_set.AM2 then
+        equip_set = equip_set.AM2
+        breadcrumbs:append('AM2')
+    elseif aftermath_level >= 1 then
+        if equip_set.AM1 then
+            equip_set = equip_set.AM1
+            breadcrumbs:append('AM1')
+        elseif equip_set.AM then
+            equip_set = equip_set.AM
+            breadcrumbs:append('AM')
+        end
     end
 
     equip_set = table.copy(equip_set) -- shallow copy the set, so that rules can mutate it
@@ -675,6 +731,8 @@ local function get_engaged_set()
         end
     end
 
+    -- print(breadcrumbs:concat('.'))
+
     -- If a set is empty, go back up the tree till a set has gear
     if empty_set(equip_set) then -- if it contains no gear
         for i = #breadcrumbs - 1, 1, -1 do
@@ -687,6 +745,8 @@ local function get_engaged_set()
             end
         end
     end
+
+    -- print(breadcrumbs:concat('.'))
 
     local final_set = equip_set
     if equip_set.swaps then
@@ -729,7 +789,9 @@ local function update_gear()
     end
 end
 
-local function aftercast(spell) if not pet_midaction() then update_gear() end end
+local function aftercast(spell) 
+    clear_timeout()
+    if not pet_midaction() then update_gear() end end
 
 -- TODO: figure out how the haste library fits into this
 local function buff_change(name, gain, buff_details)

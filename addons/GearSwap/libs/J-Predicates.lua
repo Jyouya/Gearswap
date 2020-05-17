@@ -1,4 +1,4 @@
-local res = require('resources')
+res = require('resources')
 require('strings')
 local events = require('J-Swap-Events')
 local bit = require('bit')
@@ -78,14 +78,16 @@ do
 
     function predicate_factory.elemental_obi_bonus(level)
         level = level or 1
-        return function(spell) return elemental_bonus_tier(spell) >= level end
+        return function(spell)
+            return elemental_bonus_tier(spell) >= level
+        end
     end
 
     function predicate_factory.orpheus_ele(spell)
         return elemental_bonus_tier(spell) < 2 and spell.target.distance <= 7
     end
 
-    function predicate_factory.elemental_obi(spell) 
+    function predicate_factory.elemental_obi(spell)
         local bonus = elemental_bonus_tier(spell)
         return bonus >= 2 or (bonus > 0 and spell.target.distance > 7)
     end
@@ -322,7 +324,83 @@ do
                 end
             end
 
+            if buffactive['TP Bonus'] then etp = etp + 250 end
+
             return etp > tp
+        end
+    end
+end
+
+do
+    local impetus_count = 0
+    local function bind_action()
+        local impetus_active = buffactive.Impetus
+        local player_id = windower.ffxi.get_player().id
+        if player.main_job == 'MNK' then
+            events.buff_change:register(function(buff, gain, buff_info)
+                if buff == 'Impetus' then
+                    impetus_active = gain
+                    impetus_count = 0
+                end
+            end)
+        end
+
+        -- TODO: Feather step tracking
+        windower.raw_register_event('action', function(act)
+            if impetus_active and act.actor_id == player_id then
+                if act.category == 1 or act.category == 3 then -- Melee Attack/WS
+                    for _, action in ipairs(act.targets[1].actions) do
+                        if action.reaction == 8 then
+                            impetus_count = impetus_count + 1
+                        else
+                            impetus_count = 0
+                        end
+                    end
+                end
+            end
+        end)
+        return true
+    end
+    local crit_action_handler = false
+    local job_bonus = 0
+    local merit_bonus
+    do
+        merit_bonus = player.merits.critical_hit_rate
+        local player = windower.ffxi.get_player()
+        if player.main_job == 'WAR' then
+            local jp_total = 0
+            for k, v in pairs(player.job_points.war) do
+                jp_total = jp_total + v
+            end
+            if jp_total >= 1200 then
+                job_bonus = 10
+            elseif jp_total >= 100 then
+                job_bonus = 5
+            end
+        end
+    end
+    function predicate_factory.crit_bonus_gt(n)
+        -- Requireing this here so it doesn't load if it's never used
+        rolls = rolls or require('J-Rolltracker')
+        -- We only want to start the event handler if the function is called
+        crit_action_handler = crit_action_handler or bind_action()
+        return function(spell)
+            local bonus = 0
+            if buffactive['Mighty Strikes'] then bonus = bonus + 100 end
+            if player.equipment.main == 'Shining One' then
+                bonus = bonus + player.tp / 200
+            end
+            if buffactive['Blood Rage'] then bonus = bonus + 40 end
+            -- TODO: Add featherstep based on spell.target
+            if player.main_job == 'WAR' then
+                bonus = bonus + job_bonus
+            end
+            bonus = bonus + merit_bonus
+
+            bonus = bonus + rolls['Rogue\'s Roll'].effect_value
+
+            bonus = bonus + impetus_count
+            return bonus > n
         end
     end
 end

@@ -429,19 +429,6 @@ rules.idle:append({
     end
 })
 
--- Apply TH gear over engaged set + swaps
-rules.engaged:append({
-    test = function(equip_set, spell)
-        print('th: ' .. (TH.Result and 'true' or 'false'))
-        if TH.Result then
-            equip_set.swaps = equip_set.swaps or {}
-            table.append(equip_set.swaps, table.update(sets.TreasureHunter, {
-                test = function() return true end
-            }))
-        end
-    end
-})
-
 rules.engaged:append({
     test = function() return true end,
     key = function(equip_set)
@@ -453,9 +440,22 @@ rules.engaged:append({
     end
 })
 
+-- Apply TH gear over engaged set + swaps
+rules.engaged:append({
+    test = function(equip_set)
+        -- print('th: ' .. (TH.Result and 'true' or 'false'))
+        if TH.Result then
+            equip_set.swaps = equip_set.swaps or {}
+            table.append(equip_set.swaps, table.update(sets.TreasureHunter, {
+                test = function() return true end
+            }))
+        end
+    end
+})
+
 do
     local function handle_qd(number)
-        print('qd ' .. number)
+        -- print('qd ' .. number)
         local element = settings['quickdraw' .. number].value
         windower.send_command('input /ja "' .. element .. ' shot" <t>')
     end
@@ -463,7 +463,7 @@ do
 end
 
 events.load:register(function()
-    print('on load')
+    -- print('on load')
     sets.idle = {
         head = "Malignance Chapeau",
         body = "Malignance Tabard",
@@ -737,7 +737,7 @@ events.load:register(function()
         neck = "Fotia Gorget",
         waist = "Fotia Belt",
         ear1 = "Moonshade Earring",
-        ear2 = "Telos Earring",
+        ear2 = "Odr Earring",
         ring1 = "Mummu Ring",
         ring2 = "Regal Ring",
         back = Camulus.DA
@@ -853,8 +853,8 @@ events.load:register(function()
         legs = "Darraigner's Brais",
         feet = "Oshosi Leggings +1",
         neck = "Iskur Gorget",
-        waist = "K. Kachina Belt +1",
-        ear1 = "Enervating Earring",
+        waist = "K. Kachina Belt +1", -- Gerdr Belt +1
+        ear1 = "Odr Earring",
         ear2 = "Telos Earring",
         ring1 = "Mummu Ring",
         ring2 = "Begrudging Ring",
@@ -986,13 +986,20 @@ local function get_icons(mode)
         local item_name = type(el) == 'table' and el.name or el
         local value = type(el) == 'table' and el.alias or item_name
         local img
-        if windower.file_exists(windower.addon_path .. '/data/graphics/' ..
-                                    item_name .. '.png') then
-            img = windower.addon_path .. '/data/graphics/' .. item_name ..
+        if windower.file_exists(windower.addon_path .. '/data/graphics/COR/' ..
+                                    value .. '.png') then
+            img = windower.addon_path .. '/data/graphics/COR/' .. value ..
                       '.png'
+        elseif windower.file_exists(windower.addon_path .. '/data/graphics/' ..
+                                        value .. '.png') then
+            img = windower.addon_path .. '/data/graphics/' .. value .. '.png'
         elseif windower.file_exists(
             windower.addon_path .. '/data/graphics/COR/' .. item_name .. '.png') then
             img = windower.addon_path .. '/data/graphics/COR/' .. item_name ..
+                      '.png'
+        elseif windower.file_exists(windower.addon_path .. '/data/graphics/' ..
+                                        item_name .. '.png') then
+            img = windower.addon_path .. '/data/graphics/' .. item_name ..
                       '.png'
         else
             img = get_icon(item_name)

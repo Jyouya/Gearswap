@@ -1,6 +1,6 @@
 require('J-Swap')
 require('GUI')
-local res = require('resources')
+res = require('resources')
 
 local M = require('J-Mode')
 local events = require('J-Swap-Events')
@@ -18,7 +18,9 @@ settings.main = M {
     'Mjollnir',
     'Maxentius',
     'Tishtrya',
-    'Xoanon'
+    'Daybreak',
+    'Xoanon',
+    gear.Grioavolr.MAB
 }
 
 local item_id_memo = setmetatable({}, {
@@ -30,8 +32,8 @@ local item_id_memo = setmetatable({}, {
 do
     settings.sub = M {['description'] = 'Off Hand', 'Genmei Shield'}
     local subs = T {
-        'Ukaldi', 'Sindri', 'Izcalli', 'Daybreak', 'Genmei Shield', 'Ammurapi Shield',
-        'Bloodrain Strap', 'Khonsu'
+        'Ukaldi', 'Sindri', 'Izcalli', 'Daybreak', 'Kraken Club',
+        'Genmei Shield', 'Ammurapi Shield', 'Bloodrain Strap'
     }
     local function pack_sub()
         local player = windower.ffxi.get_player()
@@ -188,7 +190,6 @@ local function dw_level()
     return 'DW' .. tostring(settings.dual_wield_level.value)
 end
 rules.engaged:append({test = dw_test, key = dw_level})
-
 rules.idle:append({test = dw_test, key = dw_level})
 
 -- Engaged Accuracy
@@ -205,10 +206,7 @@ rules.engaged:append({
 
 do
     -- Weapon lock rule
-    local function return_true()
-        print('weapon unlock override')
-        return true
-    end
+    local function return_true() return true end
     local function lock_weapons_test(equip_set, spell)
         if not settings.lock_weapons.value then
             equip_set.swap_managed_weapon = return_true
@@ -255,7 +253,7 @@ events.load:register(function()
         }
         sets.idle = {
             main = 'Malignance Pole',
-            sub = 'Khonsu',
+            sub = 'Mensch Strap +1',
             ammo = 'Staunch Tathlum +1',
             head = 'Inyanga Tiara +2',
             body = 'Piety Briault +3',
@@ -280,6 +278,9 @@ events.load:register(function()
                     legs = 'Assiduity Pants +1',
                     right_ring = 'Stikini Ring +1'
                 }, {
+                    test = pred_factory.buff_active('Sublimation: Activated'),
+                    waist = 'Embla Sash'
+                }, {
                     test = function()
                         return cities[world.area]
                     end,
@@ -302,7 +303,7 @@ events.load:register(function()
     end
 
     sets.precast = {
-        main = 'Grioavolr',
+        main = gear.Grioavolr.FC,
         sub = 'Clerisy Strap',
         ammo = 'Impatiens',
         head = gear.Vanya.Head.PathD,
@@ -341,7 +342,7 @@ events.load:register(function()
 
     sets.precast.Dispelga = set_combine(sets.precast, {
         main = 'Daybreak',
-        sub = 'Maxentius',
+        sub = 'C. Palug Hammer',
         swap_managed_weapon = function() return true end
     })
 
@@ -363,8 +364,25 @@ events.load:register(function()
         back = gear.Alaunus.DEX_DA
     }
 
-    sets.midcast = {}
+    sets.midcast = {
+        main = 'Malignance Pole',
+        sub = 'Clerisy Strap',
+        ammo = 'Staunch Tathlum +1',
+        head = gear.Vanya.Head.PathD,
+        body = 'Inyanga Jubbah +2',
+        hands = gear.Chironic.Hands.FC,
+        legs = 'Aya. Cosciales +2',
+        feet = 'Regal Pumps +1',
+        neck = 'Cleric\'s Torque +2',
+        waist = 'Embla Sash',
+        left_ear = 'Nourishing Earring +1',
+        right_ear = 'Etiolation Earring',
+        left_ring = 'Kishar Ring',
+        right_ring = 'Prolix Ring',
+        back = gear.Alaunus.FC
+    }
 
+    local cure_weapons = S {'Mjollnir', 'Izcalli', 'Daybreak'}
     sets.midcast.Cure = {
         main = gear.RaeticRod1,
         sub = 'Genmei Shield',
@@ -382,14 +400,13 @@ events.load:register(function()
         right_ring = 'Gelatinous Ring +1',
         back = gear.Alaunus.Meva,
         swaps = {
+            {test = pred_factory.elemental_obi_bonus(1), waist = 'Korin Obi'},
             {
-                test = pred_factory.elemental_obi_bonus(1),
-                waist = 'Korin Obi' -- Hachirin-no-Obi
-            }, {
                 test = function()
                     return settings.lock_weapons.value and
-                               buffactive['Aflatus Solace'] and settings.main ~=
-                               'Mjollnir' and settings.sub ~= 'Izcalli'
+                               buffactive['Aflatus Solace'] and
+                               (cure_weapons[settings.main.value] or
+                                   cure_weapons[settings.sub.value])
                 end,
                 hands = gear.Kaykaus.Hands.PathC
             }, {test = dw_sub_job, sub = gear.RaeticRod2},
@@ -403,6 +420,7 @@ events.load:register(function()
     sets.midcast['Full Cure'] = set_combine(sets.midcast.Cure, {
         head = gear.Vanya.Head.PathD,
         legs = 'Aya. Cosciales +2',
+        waist = 'Embla Sash',
         back = gear.Alaunus.FC
     })
 
@@ -483,6 +501,7 @@ events.load:register(function()
         legs = gear.Telchine.Legs.Enhancing,
         feet = 'Theo. Duckbills +3',
         neck = 'Melic Torque', -- Incanter's Torque
+        waist = 'Embla Sash',
         right_ring = 'Stikini Ring +1',
         left_ear = 'Andoaa Earring',
         right_ear = 'Malignance Earring',
@@ -500,7 +519,7 @@ events.load:register(function()
         legs = 'Piety Pantaloons +3',
         feet = 'Theo. Duckbills +3',
         neck = 'Melic Torque', -- Incanters
-        waist = 'Fucho-no-Obi', -- Embla Sash
+        waist = 'Embla Sash',
         left_ear = 'Andoaa Earring',
         right_ear = 'Gwati Earring',
         left_ring = 'Inyanga Ring',
@@ -530,13 +549,11 @@ events.load:register(function()
         }
     }
 
-    sets.midcast.Shellra = set_combine(sets.midcast['Enhancing Magic'], {
-        left_ring = 'Sheltered Ring'
-    })
+    sets.midcast.Shellra = set_combine(sets.midcast['Enhancing Magic'],
+                                       {left_ring = 'Sheltered Ring'})
 
-    sets.midcast.Protectra = set_combine(sets.midcast['Enhancing Magic'], {
-        left_ring = 'Sheltered Ring'
-    })
+    sets.midcast.Protectra = set_combine(sets.midcast['Enhancing Magic'],
+                                         {left_ring = 'Sheltered Ring'})
 
     sets.midcast.BarElement = {
         main = 'Gada',
@@ -545,7 +562,7 @@ events.load:register(function()
         body = 'Ebers Bliaud +1',
         hands = 'Inyan. Dastanas +2',
         legs = 'Piety Pantaloons +3',
-        feet = 'Ebers Duckbills',
+        feet = 'Ebers Duckbills +1',
         neck = 'Melic Torque',
         waist = 'Olympus Sash',
         left_ear = 'Thureous Earring',
@@ -588,6 +605,7 @@ events.load:register(function()
         hands = 'Ebers Mitts +1',
         legs = 'Th. Pantaloons +3',
         feet = gear.Telchine.Feet.Regen,
+        waist = 'Embla Sash',
         back = gear.Alaunus.Meva,
         swap_managed_weapon = enhancing_weapon_swap_test
     }
@@ -601,6 +619,7 @@ events.load:register(function()
         hands = 'Ebers Mitts +1',
         legs = 'Th. Pantaloons +3',
         feet = 'Theo. Duckbills +3',
+        waist = 'Embla Sash',
         back = gear.Alaunus.Meva,
         swap_managed_weapon = enhancing_weapon_swap_test
     }
@@ -611,7 +630,7 @@ events.load:register(function()
     })
 
     sets.midcast.Auspice = set_combine(sets.midcast['Enhancing Magic'],
-                                       {feet = 'Ebers Duckbills'})
+                                       {feet = 'Ebers Duckbills +1'})
 
     sets.SIRD = {
         ammo = 'Staunch Tathlum +1',
@@ -623,6 +642,7 @@ events.load:register(function()
         right_ring = 'Evanescence Ring'
     }
     sets.ConserveMP = {
+        ammo = 'Pemphredo Tathlum',
         head = gear.Vanya.Head.PathD,
         body = 'Chironic Doublet',
         waist = 'Luminary Sash',
@@ -659,7 +679,8 @@ events.load:register(function()
         head = 'Theophany Cap +3',
         body = 'Theophany Briault +3',
         hands = 'Theophany Mitts +3',
-        legs = gear.Chironic.Legs.Enfeeble,
+        legs = gear.Chironic.Legs.INT_Enfeeble,
+        feet = 'Theophany Duckbills +3',
         neck = 'Erra Pendant',
         waist = 'Acuity Belt +1',
         left_ear = 'Malignance Earring',
@@ -668,22 +689,23 @@ events.load:register(function()
         right_ring = 'Stikini Ring +1',
         back = gear.Alaunus.INT_Enfeeble,
         swap_managed_weapon = enhancing_weapon_swap_test,
-        swaps = {{test = dw_sub_job, sub = 'Daybreak'}}
+        swaps = {{test = dw_sub_job, sub = 'C. Palug Hammer'}}
     }
 
     sets.midcast.MndEnfeebles = set_combine(sets.midcast['Enfeebling Magic'], {
         waist = 'Luminary Sash',
-        back = gear.Alaunus.MND_Enfeeble
+        back = gear.Alaunus.MND_Enfeeble,
+        swaps = {{test = dw_sub_job, sub = 'Daybreak'}}
     })
 
     sets.midcast.Paralyze = set_combine(sets.midcast.MndEnfeebles, {
-        main = 'Daybreak',
-        swaps = {{test = dw_sub_job, sub = 'Maxentius'}}
+        main = 'Daybreak'
+        -- swaps = {{test = dw_sub_job, sub = 'C. Palug Hammer'}}
     })
 
     sets.midcast.Slow = set_combine(sets.midcast.MndEnfeebles, {
-        main = 'Daybreak',
-        swaps = {{test = dw_sub_job, sub = 'Maxentius'}}
+        main = 'Daybreak'
+        -- swaps = {{test = dw_sub_job, sub = 'C. Palug Hammer'}}
     })
 
     sets.midcast.Repose = table.copy(sets.midcast.MndEnfeebles)
@@ -691,7 +713,8 @@ events.load:register(function()
 
     sets.midcast.Dispelga = set_combine(sets.midcast['Enfeebling Magic'], {
         main = 'Daybreak',
-        sub = 'Maxentius',
+        sub = 'Ammurapi Shield',
+        swaps = {{test = dw_sub_job, sub = 'C. Palug Hammer'}},
         swap_managed_weapon = function() return true end
     })
 
@@ -702,6 +725,26 @@ events.load:register(function()
         right_ring = 'Excelsis Ring'
     })
     sets.midcast['Elemental Magic'] = table.copy(sets.midcast['Divine Magic'])
+
+    sets.midcast.Holy = {
+        ammo = 'Pemphredo Tathlum',
+        head = 'C. Palug Crown',
+        body = gear.Chironic.Body.MAB,
+        hands = gear.Chironic.Hands.MAB,
+        legs = gear.Kaykaus.Legs.PathD,
+        feet = gear.Chironic.Feet.MAB,
+        neck = 'Saevus Pendant +1',
+        waist = 'Refolccilation Stone',
+        left_ear = 'Friomisi Earring',
+        right_ear = 'Malignance Earring',
+        left_ring = 'Weatherspoon Ring',
+        right_ring = 'Metamorph Ring +1',
+        back = gear.Alaunus.MND_Enfeeble,
+        swaps = {
+            {test = pred_factory.orpheus_ele, waist = 'Orpheus\'s Sash'},
+            {test = pred_factory.elemental_obi, waist = 'Korin Obi'}
+        }
+    }
 
     -- Engaged Sets
     sets.engaged = {
@@ -730,7 +773,7 @@ events.load:register(function()
         back = gear.Alaunus.DW, -- Make a 9 DW cape
         swaps = {
             {
-                test = pred_factory.buff_active('Aftermath: Lv.3'),
+                test = pred_factory.buff_active('Aftermath: Lv.3')
                 -- back = gear.Alaunus.STP,
                 -- left_ear = 'Eabani Earring',
                 -- right_ear = 'Suppanomimi'
@@ -776,7 +819,7 @@ events.load:register(function()
         head = 'Piety Cap +3',
         body = 'Ayanmo Corazza +2',
         hands = 'Piety Mitts +3',
-        legs = 'Piety Pantaloons +3',
+        legs = gear.Telchine.Legs.STP_WSD,
         feet = 'Piety Duckbills +3',
         neck = 'Cleric\'s Torque +2',
         waist = 'Windbuffet Belt +1',
@@ -789,6 +832,9 @@ events.load:register(function()
             {test = pred_factory.etp_gt(2750), left_ear = 'Ishvara Earring'}
         }
     }
+
+    sets.WS['Black Halo'].mid = set_combine(sets.WS['Black Halo'],
+                                            {legs = 'Piety Pantaloons +3'})
 
     sets.WS['Mystic Boon'] = {
         ammo = 'Hydrocera',
@@ -834,16 +880,17 @@ events.load:register(function()
     sets.WS.Judgment.Mid = set_combine(sets.WS.Judgment,
                                        {legs = 'Piety Pantaloons +3'})
 
+    -- Quick math suggests we want between 16 and 40% DA
     sets.WS['Hexa Strike'] = {
-        ammo = 'Amar Cluster',
+        ammo = 'Yetshila +1',
         head = 'Piety Cap +3',
-        body = 'Piety Briault +3',
+        body = 'Ayanmo Corazza +2',
         hands = 'Piety Mitts +3',
         legs = 'Piety Pantaloons +3',
-        feet = 'Piety Duckbills +3',
-        neck = 'Fotia Gorget',
-        waist = 'Fotia Belt',
-        left_ear = 'Telos Earring',
+        feet = 'Ayanmo Gambieras +2',
+        neck = 'Flame Gorget',
+        waist = 'Flame Belt',
+        left_ear = 'Brutal Earring',
         right_ear = 'Moonshade Earring',
         left_ring = 'Ilabrat Ring',
         right_ring = 'Begrudging Ring',
@@ -890,10 +937,10 @@ events.load:register(function()
     sets.WS['Flash Nova'] = {
         ammo = 'Pemphredo Tathlum',
         head = 'C. Palug Crown',
-        body = 'Gyve Doublet',
-        hands = gear.Chironic.Hands.Mab,
+        body = gear.Chironic.Body.MAB,
+        hands = gear.Chironic.Hands.MAB,
         legs = gear.Kaykaus.Legs.PathD,
-        feet = gear.Chironic.Feet.Mab,
+        feet = gear.Chironic.Feet.MAB,
         neck = 'Saevus Pendant +1',
         waist = 'Orpheus\'s Sash',
         left_ear = 'Moonshade Earring',
@@ -908,7 +955,7 @@ events.load:register(function()
         }
     }
 
-    sets.WS['Seraph Strike'] = set_combine(sets['Flash Nova'], {})
+    sets.WS['Seraph Strike'] = set_combine(sets.WS['Flash Nova'], {})
 
     sets.Randgrith = {
         ammo = 'Amar Cluster',
@@ -984,16 +1031,16 @@ events.load:register(function()
     sets.WS.Cataclysm = {
         ammo = 'Pemphredo Tathlum',
         head = 'Pixie Hairpin +1',
-        body = 'Gyve Doublet',
-        hands = gear.Chironic.Hands.Mab,
+        body = gear.Chironic.Body.MAB,
+        hands = gear.Chironic.Hands.MAB,
         legs = gear.Kaykaus.Legs.PathD,
-        feet = gear.Chironic.Feet.Mab,
+        feet = gear.Chironic.Feet.MAB,
         neck = 'Saevus Pendant +1',
         waist = 'Orpheus\'s Sash',
         left_ear = 'Moonshade Earring',
         right_ear = 'Malignance Earring',
-        left_ring = 'Weatherspoon Ring',
-        right_ring = 'Metamorph Ring +1',
+        left_ring = 'Freke Ring',
+        right_ring = 'Archon Ring',
         back = gear.Alaunus.STR_WSD, -- Make a str macc/matk wsd cape at some point
         swaps = {
             {test = pred_factory.orpheus_ele, waist = 'Orpheus\'s Sash'},
@@ -1003,6 +1050,37 @@ events.load:register(function()
     }
 
     sets.WS['Shell Crusher'] = table.copy(sets.WS.Brainshaker)
+end)
+
+local solace_charge = 0
+local misery_charge = 0
+local player_id = windower.ffxi.get_player().id
+windower.raw_register_event('action', function(act)
+    if act.actor_id == player_id and act.category == 4 then
+        if act.param < 12 or act.param == 893 then -- cure spells
+            for _, target in ipairs(act.targets) do
+                solace_charge = solace_charge + target.actions[1].param
+            end
+        end
+    end
+end)
+
+-- zero charge when casting associated spells
+events.aftercast:register(function(spell)
+    if spell.english:contains('Holy') then
+        solace_charge = 0
+    elseif spell.english:contains('Banish') then
+        misery_charge = 0
+    end
+end)
+
+-- zero out the charges when gaining/losing buffs
+events.buff_change:register(function(buff, gain)
+    if buff == 'Afflatus Solace' then
+        solace_charge = 0
+    elseif buff == 'Afflatus Misery' then
+        misery_charge = 0
+    end
 end)
 
 do
@@ -1162,4 +1240,14 @@ do
         disabled = show_dw
     }):draw()
 
+    GUI_y = GUI_y + 32
+
+    PassiveText({ -- ? Does passive text let you change the color?
+		x = GUI_x,
+		y = GUI_y,
+		text = 'Afflatus Solace Charge: %s',
+		align = 'left'},
+        function() 
+            return (solace_charge > 1300 and 1300 or solace_charge) / 13
+        end):draw()
 end
