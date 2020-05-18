@@ -1,1008 +1,1270 @@
-require('Modes')
-require('Gui')
-require('DualWieldCalc')
-
-function setup()
-    AccuracyMode = M {
-        ['description'] = 'Accuracy Mode',
-        'Normal',
-        'Mid',
-        'High'
-    }
-
-    AbysseaMode = M(false, 'Abyssea Mode')
-    OffhandMode = M {['description'] = 'Offhand Mode', 'Auto', 'Manual'}
-
-    WeaponMode = M {
-        ['description'] = 'Weapon',
-        'Chango',
-        'Montante +1',
-        'Raetic Algol +1',
-        'Shining One',
-        'Kaja Staff',
-        'Kaja Axe',
-        'Kaja Sword'
-    }
-    Offhand = M {
-        ['description'] = 'Offhand',
-        'Reikiko',
-        'Barbarity +1',
-        'Digirbalag',
-        'Blurred Shield +1'
-    }
-    AbysseaWeapon = M {
-        ['description'] = 'Weapon',
-        'Dagger',
-        'Sword',
-        'Greatsword',
-        'Scythe',
-        'Spear',
-        'Club',
-        'Staff',
-        'Katana',
-        'Great Katana'
-    }
-
-    EngagedMode = M {['description'] = 'Engaged Mode', 'Normal', 'Hybrid', 'DT'}
-    IdleMode = M {['description'] = 'Idle Mode', 'Normal', 'Fell Cleave'} -- Normal idel gear or Su3 for fell cleave
-
-    DWMode = M {['description'] = 'Dual Wield Mode', 'Auto', 'Manual'}
-    DWLevel = M {['description'] = 'Dual Wield Level', '11', '15', '21', '25'}
-
-    Obi_WS =
-        T { -- Any weaponskills we want to check weather/day and use the obi
-            'Cloudsplitter'
-        }
-
-    WeaponTable = {
-        ['Chango'] = {main = "Chango", type = '2H', img = 'WAR/Chango.png'},
-        ['Montante +1'] = {
-            main = "Montante +1",
-            type = '2H',
-            img = 'WAR/Montante.png'
-        },
-        ['Raetic Algol +1'] = {
-            main = "Raetic Algol +1",
-            type = '2H',
-            img = 'WAR/Raetic Algol.png.'
-        },
-        ['Shining One'] = {
-            main = "Shining One",
-            type = '2H',
-            img = 'WAR/Bismarck.png'
-        },
-        ['Kaja Staff'] = {
-            main = "Kaja Staff",
-            type = '2H',
-            img = 'WAR/Kaja Staff.png'
-        },
-        ['Kaja Axe'] = {
-            main = "Dolichenus",
-            type = '1H',
-            DW = true,
-            img = 'WAR/Kaja Axe.png',
-            offhand = T {
-                default = 'digirbalag',
-                {buff = 'Fighter\'s Roll', weapon = 'Barbarity +1'},
-                {buff = 'Mighty Strikes', weapon = 'Reikiko'}
-            }
-        },
-        ['Kaja Sword'] = {
-            main = "Kaja Sword",
-            type = '1H',
-            DW = true,
-            img = 'WAR/Kaja Sword.png',
-            offhand = T {
-                default = 'Barbarity +1',
-                {buff = 'Mighty Strikes', weapon = 'Reikiko'}
-            }
-        }
-    }
-
-    OffhandTable = {
-        ['Reikiko'] = {sub = "Reikiko", img = 'WAR/Reikiko.png', DW = true},
-        ['Barbarity +1'] = {
-            sub = "Barbarity +1",
-            img = 'WAR/Barbarity.png',
-            DW = true
-        },
-        ['Digirbalag'] = {
-            sub = "Digirbalag",
-            img = 'WAR/Digirbalag.png',
-            DW = true
-        },
-        ['Blurred Shield +1'] = {
-            sub = "Blurred Shield +1",
-            img = 'WAR/Blurred Shield.png',
-            Fencer = true
-        }
-    }
-
-    AWeaponTable = {
-        ['Dagger'] = {main = "Bronze Dagger", img = 'WAR/Bronze Dagger.png'},
-        ['Sword'] = {main = "Ibushi Shinai", img = 'WAR/Ibushi Shinai.png'},
-        ['Greatsword'] = {main = "Claymore", img = 'WAR/Claymore.png'},
-        ['Scythe'] = {main = "Bronze Zaghnal", img = 'WAR/Bronze Zaghnal.png'},
-        ['Spear'] = {main = "Harpoon", img = 'WAR/Harpoon.png'},
-        ['Club'] = {main = "Soulflayer's Wand", img = 'WAR/Ash Club.png'},
-        ['Staff'] = {main = "Ash Staff", img = 'WAR/Ash Staff.png'},
-        ['Katana'] = {main = "Debahocho", img = 'WAR/Debahocho.png'},
-        ['Great Katana'] = {main = "Mutsunokami", img = 'WAR/Mutsunokami.png'}
-    }
-
-    selfCommandMaps = {
-        ['set'] = function(arg)
-            _G[arg[1]]:set(table.concat(table.slice(arg, 2, -1), " "));
-            update_gear()
-        end,
-        ['toggle'] = function(arg)
-            _G[arg[1]]:toggle();
-            update_gear()
-        end,
-        ['cycle'] = function(arg)
-            _G[arg[1]]:cycle();
-            update_gear()
-        end,
-        ['cycleback'] = function(arg)
-            _G[arg[1]]:cycleback();
-            update_gear()
-        end,
-        ['update'] = update_gear,
-        ['cursna'] = function() equip(sets.Cursna) end,
-        ['cure'] = function() equip(sets.Cure) end
-    }
-
-    build_GUI()
-    bind_keys()
-    local dw_level = get_dw_level()
-    DWLevel:set(tostring(dw_level))
-end
-
-function get_sets()
-    setup()
-
-    Cichol = {}
-    Cichol.Acc = {
-        name = "Cichol's Mantle",
-        augments = {
-            'DEX+20', 'Accuracy+20 Attack+20', 'Accuracy+10', '"Dbl.Atk."+10',
-            'Phys. dmg. taken -10%'
-        }
-    }
-    Cichol.STR = {
-        name = "Cichol's Mantle",
-        augments = {
-            'STR+20', 'Accuracy+20 Attack+20', 'STR+10', '"Dbl. Atk."+10',
-            'Phys. dmg. taken -10%'
-        }
-    }
-    Cichol.VIT = {
-        name = "Cichol's Mantle",
-        augments = {
-            'VIT+20', 'Accuracy+20 Attack+20', 'VIT+10',
-            'Weapon skill damage +10%'
-        }
-    }
-    Cichol.WSD = {
-        name = "Cichol's Mantle",
-        augments = {
-            'STR+20', 'Accuracy+20 Attack+20', 'STR+10',
-            'Weapon skill damage +10%', 'Phys. dmg. taken -10%'
-        }
-    }
-    Cichol.DW = {
-        name = "Cichol's Mantle",
-        augments = {
-            'DEX+20', 'Accuracy+20 Attack+20', 'Accuracy+10', '"Dbl.Atk."+10',
-            'Phys. dmg. taken -10%'
-        }
-    } -- Dual Wield Cape
-
-    Odyssean = {}
-    Odyssean.Hands = {}
-    Odyssean.Hands.WS = {
-        name = "Odyssean Gauntlets",
-        augments = {'Accuracy+25', 'Weapon skill damage +3%', 'VIT+4'}
-    }
-    Odyssean.Legs = {}
-    Odyssean.Legs.STP = {
-        name = "Odyssean Cuisses",
-        augments = {'"Store TP"+7', 'Accuracy+13', 'Attack+20', 'VIT+8'}
-    }
-    Odyssean.Legs.WS = {
-        name = "Odyssean Cuisses",
-        augments = {'Accuracy+25 Attack+25', 'Weapon skill damage +3%', 'AGI+6'}
-    }
-    Odyssean.Feet = {}
-    -- Odyssean.Feet.FC = { name="Odyssean Greaves", augments={'Attack+20','"Fast Cast"+4','Accuracy+15',}}
-
-    Valorous = {}
-    Valorous.Body = {}
-    Valorous.Body.STP = {
-        name = "Valorous Mail",
-        augments = {
-            'INT+10', 'MND+4', '"Store TP"+9', 'Mag. Acc.+1 "Mag.Atk.Bns."+1'
-        }
-    }
-
-    sets.Obi = {waist = "Hachirin-No-Obi"}
-
-    sets.Grip = {sub = "Utu Grip"}
-
-    sets.Shield = {sub = "Blurred Shield +1"}
-
-    sets.enmity = {
-        head = "Halitus Helm",
-        body = "Emet Harness +1",
-        hands = "Pummeler's Mufflers +1",
-        legs = "Odyssean Cuisses",
-        neck = "Moonlight Necklace",
-        waist = "Kasiri Belt",
-        ear1 = "Friomisi Earring",
-        ear2 = "Cryptic Earring",
-        ring1 = "Petrov Ring",
-        ring2 = "Eihwaz Ring"
-    }
-
-    sets.precast = {}
-
-    sets.JA = {}
-
-    sets.JA['Mighty Strikes'] = {hands = "Agoge Mufflers"}
-    sets.JA['Blood Rage'] = {body = "Boii Lorica +1"}
-    sets.JA['Warcry'] = {head = "Agoge Mask +3"}
-    sets.JA['Berserk'] = {
-        main = "Instigator",
-        body = "Pumm. Lorica +3",
-        feet = "Agoge Calligae +3"
-    }
-    sets.JA['Tomahawk'] = {ammo = "Throwing Tomahawk"}
-    sets.JA['Provoke'] = sets.enmity
-    sets.JA['Aggressor'] = {head = "Pummeler's Mask +1", body = "Agoge Lorica +3"}
-
-    sets.precast = {
-        ammo = "Impatiens",
-        body = "Odyssean Chestplate",
-        hands = "Leyline Gloves",
-        legs = "Eschite Cuisses",
-        feet = "Odyssean Greaves",
-        ear1 = "Loquacious Earring",
-        ring1 = "Moonlight Ring",
-        ring2 = "Prolix Ring"
-    }
-
-    sets.precast.Utsusemi = set_combine(sets.precast, {neck = "Magoraga Beads"})
-
-    sets.midcast = set_combine(sets.precast, {})
-
-    sets.midcast.Utsusemi = set_combine(sets.precast.Utsusemi, {})
-
-    -- Weaponskill Sets --
-    -- format is sets.WS['Savage Blade']['Mighty Strikes']['Brazen Rush'].Fencer.TP[2000].Mid.Day
-    -- Any value may be omitted, but they must be in order
-    -- Buffs are calculated into TP.  Fencer is not
-
-    sets.WS = {
-        ammo = "Seething Bomblet +1",
-        head = "Flamma Zucchetto +2",
-        body = "Flamma Korazin +2",
-        hands = "Sulevia's Gauntlets +2",
-        legs = "Sulevia's Cuisses +2",
-        feet = "Pummeler's Calligae +3",
-        neck = "Fotia Gorget",
-        waist = "Fotia Belt",
-        ear1 = "Brutal Earring",
-        ear2 = "Moonshade Earring",
-        ring1 = "Niqmaddu Ring",
-        ring2 = "Regal Ring",
-        back = Cichol.STR
-    }
-
-    sets.WS.Mid = set_combine(sets.WS, {legs = "Pummeler's Cuisses +3"})
-
-    sets.WS.Acc = set_combine(sets.WS.Mid, {
-        body = "Pumm. Lorica +3",
-        ear1 = "Telos Earring"
-    })
-
-    -- Great Axe Weaponskills --
-
-    sets.WS.Upheaval = {
-        ammo = "Knobkierrie",
-        head = "Agoge Mask +3",
-        body = "Pumm. Lorica +3",
-        hands = Odyssean.Hands.WS,
-        legs = Odyssean.Legs.WS,
-        feet = "Sulevia's Leggings +2",
-        neck = "War. Beads +1",
-        waist = "Sailfi Belt +1",
-        ear1 = "Thrud Earring",
-        ear2 = "Moonshade Earring",
-        ring1 = "Niqmaddu Ring",
-        ring2 = "Gelatinous Ring +1",
-        back = Cichol.VIT
-    }
-
-    sets.WS.Upheaval.Mid = set_combine(sets.WS.Upheaval, {
-        legs = "Pummeler's Cuisses +3",
-        ring1 = "Regal Ring"
-    })
-
-    sets.WS.Upheaval.High = set_combine(sets.WS.Upheaval.Mid, {
-        feet = "Pummeler's Calligae +3",
-        ear1 = "Telos Earring"
-    })
-
-    sets.WS['Fell Cleave'] = {
-        ammo = "Knobkierrie",
-        head = "Agoge Mask +3",
-        body = "Pumm. Lorica +3",
-        hands = "Sulevia's Gauntlets +2", -- DT hybrid
-        legs = Odyssean.Legs.WS, -- DT hybrid
-        feet = "Sulevia's Leggings +2",
-        neck = "War. Beads +1",
-        waist = "Sailfi Belt +1",
-        ear1 = "Ishvara Earring",
-        ear2 = "Moonshade Earring",
-        ring1 = "Niqmaddu Ring",
-        ring2 = "Regal Ring",
-        back = Cichol.WSD
-    }
-
-    sets.WS['Steel Cyclone'] =
-        set_combine(sets.WS.Upheaval, {back = Cichol.WSD})
-
-    -- Great Sword Weaponskills --
-
-    sets.WS['Scourge'] = set_combine(sets.WS.Upheaval, {back = Cichol.WSD})
-
-    sets.WS.Resolution = {
-        ammo = "Seething Bomblet +1",
-        head = "Flamma Zucchetto +2",
-        body = "Dagon Breastplate",
-        hands = "Argosy Mufflers +1",
-        legs = "Argosy Breeches +1",
-        feet = "Pummeler's Calligae +3",
-        neck = "Fotia Gorget",
-        waist = "Fotia Belt",
-        ear1 = {name = "Brutal Earring", priority = 15},
-        ear2 = "Moonshade Earring",
-        ring1 = "Niqmaddu Ring",
-        ring2 = "Regal Ring",
-        back = Cichol.STR
-    }
-
-    sets.WS.Resolution.Mid = set_combine(sets.WS.Resolution,
-                                         {legs = "Pummeler's Cuisses +3"})
-
-    sets.WS.Resolution.High = set_combine(sets.WS.Resolution.Mid,
-                                          {ear1 = "Telos Earring"})
-
-    sets.WS.Resolution.High.TP = {}
-    sets.WS.Resolution.High.TP[2800] = set_combine(sets.WS.Resolution.High,
-                                                   {ear2 = "Cessance Earring"})
-
-    sets.WS.Resolution['Mighty Strikes'] =
-        {
-            ammo = "Seething Bomblet +1",
-            head = "Flamma Zucchetto +2",
-            body = "Argosy Hauberk +1", -- get some crit valorous augs
-            hands = "Argosy Mufflers +1",
-            legs = "Argosy Breeches +1",
-            feet = "Boii Calligae +1",
-            neck = "Fotia Gorget",
-            waist = "Fotia Belt",
-            ear1 = {name = "Brutal Earring", priority = 15},
-            ear2 = "Moonshade Earring",
-            ring1 = "Niqmaddu Ring",
-            ring2 = "Regal Ring",
-            back = Cichol.STR
-        }
-
-    -- Spear Weaponskills --
-
-    -- sets.WS.Stardiver = {}
-
-    -- sets.WS['Impulse Drive'] = {} -- low TP set
-    -- sets.WS['Impulse Drive'].TP = {} -- leave blank
-    -- sets.WS['Impulse Drive'].TP[2000] = {} -- High TP set
-    -- sets.WS['Impulse Drive'].TP[2800] = {} -- Full TP set
-
-    -- Sword Weaponskills --
-
-    -- sets.WS['Savage Blade'] = {}
-    -- sets.WS['Savage Blade'].TP = {} -- leave blank
-    -- sets.WS['Savage Blade'].TP[2800] = {} -- full TP set without moonshade
-
-    -- sets.WS['Savage Blade'].Fencer = {}
-    -- sets.WS['Savage Blade'].Fencer.TP = {}
-    -- sets.WS['Savage Blade'].Fencer.TP[2000] = {}
-
-    -- sets.WS['Requiescat'] = {}
-
-    -- Axe Weaponskills --
-
-    sets.WS.Decimation = set_combine(sets.WS.Resolution,
-                                     {ear2 = "Cessance Earring"})
-
-    sets.WS.Decimation.Mid = set_combine(sets.WS.Resolution.Mid,
-                                         {ear2 = "Cessance Earring"})
-
-    sets.WS.Decimation.High = set_combine(sets.WS.Resolution.High,
-                                          {ear2 = "Cessance Earring"})
-
-    -- sets.WS.Cloudsplitter = {}
-
-    -- Idle Sets --
-
-    sets.idle = {}
-    sets.idle.Normal = {
-        ammo = "Staunch Tathlum +1",
-        head = "Hjarrandi Helm",
-        body = "Hjarrandi Breastplate",
-        hands = "Sulevia's Gauntlets +2",
-        legs = "Pummeler's Cuisses +3",
-        feet = "Pummeler's Calligae +3",
-        neck = "Sanctity Necklace",
-        waist = "Asklepian Belt",
-        -- ear1="Etoilation Earring",
-        ear2 = "Infused Earring",
-        ring1 = "Moonlight Ring",
-        ring2 = "Gelatinous Ring +1",
-        back = "Moonlight Cape"	
-    }
-
-    sets.idle['Fell Cleave'] = set_combine(sets.idle.Normal, {})
-
-    -- Engaged Sets --
-
-    sets.engaged = {
-        ammo = "Ginsen",
-        head = "Flamma Zucchetto +2",
-        -- body=Valorous.Body.STP,
-        body = "Dagon Breastplate",
-        hands = "Sulevia's Gauntlets +2",
-        legs = Odyssean.Legs.STP,
-        feet = "Pummeler's Calligae +3",
-        neck = "War. Beads +1",
-        waist = "Ioskeha Belt +1",
-        ear1 = "Brutal Earring",
-        ear2 = "Cessance Earring",
-        ring1 = "Niqmaddu Ring",
-        ring2 = "Petrov Ring",
-        back = Cichol.STR
-    }
-
-    sets.engaged.Mid = set_combine(sets.engaged, {
-        body = "Dagon Breastplate",
-        legs = "Pummeler's Cuisses +3",
-        neck = "Warrior's Bead Necklace +1",
-        ear1 = "Telos Earring",
-        back = Cichol.Acc
-    })
-
-    sets.engaged.High = set_combine(sets.engaged.Mid, {
-        body = "Pumm. Lorica +3",
-        ring2 = "Moonlight Ring" -- "Regal Ring"
-    })
-
-    sets.engaged.DW = {
-        ammo = "Ginsen",
-        head = "Flamma Zucchetto +2",
-        body = Valorous.Body.STP,
-        hands = "Emicho Gauntlets +1",
-        legs = "Pummeler's Cuisses +3",
-        feet = "Pummeler's Calligae +3",
-        neck = "War. Beads +1",
-        waist = "Ioskeha Belt +1",
-        ear1 = "Brutal Earring",
-        ear2 = {name = "Suppanomimi", priority = 15},
-        ring1 = "Niqmaddu Ring",
-        ring2 = "Petrov Ring",
-        back = Cichol.STR
-    }
-
-    sets.engaged.DW.Mid = set_combine(sets.engaged.DW, {
-        body = "Emicho Haubert +1",
-        legs = "Pummeller's Cuisses +3",
-        neck = "Warrior's Bead Necklace +1",
-        ear1 = "Cessance Earring",
-        back = Cichol.Acc
-    })
-
-    sets.engaged.DW.High = set_combine(sets.engaged.DW.Mid, {
-        ear1 = "Telos Earring",
-        ring2 = "Moonlight Ring"
-    })
-
-    sets.engaged.DW['11'] = sets.engaged.DW
-
-    sets.engaged.DW['15'] = set_combine(sets.engaged.DW,
-                                        {ear1 = "Eabani Earring"})
-
-    sets.engaged.DW['15'].Mid = set_combine(sets.engaged.DW.Mid,
-                                            {ear1 = "Eabani Earring"})
-
-    sets.engaged.DW['15'].High = set_combine(sets.engaged.DW.High,
-                                             {ear1 = "Eabani Earring"})
-
-    sets.engaged.DW['21'] = set_combine(sets.engaged.DW, {
-        -- back=Cichol.DW,
-    })
-
-    sets.engaged.DW['21'].Mid = set_combine(sets.engaged.DW.Mid, {
-        -- back=Cichol.DW,
-    })
-
-    sets.engaged.DW['21'].High = set_combine(sets.engaged.DW.High, {
-        -- back=Cichol.DW,
-    })
-
-    sets.engaged.DW['25'] = set_combine(sets.engaged.DW, {
-        ear1 = "Eabani Earring"
-        -- back=Cichol.DW
-    })
-
-    sets.engaged.DW['25'].Mid = set_combine(sets.engaged.DW.Mid, {
-        ear1 = "Eabani Earring"
-        -- back=Cichol.DW
-    })
-
-    sets.engaged.DW['25'].High = set_combine(sets.engaged.DW.High, {
-        ear1 = "Eabani Earring"
-        -- back=Cichol.DW
-    })
-
-    sets.engaged.Hybrid = {
-        ammo = "Staunch Tathlum +1",
-        head = "Flamma Zucchetto +2",
-        body = "Hjarrandi Breastplate",
-        hands = "Sulevia's Gauntlets +2",
-        legs = "Pummeler's Cuisses +3",
-        feet = "Pummeler's Calligae +3",
-        neck = "War. Beads +1",
-        waist = "Ioskeha Belt +1",
-        ear1 = "Telos Earring",
-        ear2 = "Cessance Earring",
-        ring1 = "Moonlight Ring",
-        ring2 = "Defending Ring",
-        back = Cichol.Acc
-    }
-
-    sets.engaged.Hybrid.DW = {
-        ammo = "Staunch Tathlum +1",
-        head = "Sulevia's Mask +2",
-        body = "Hjarrandi Breastplate",
-        hands = "Emicho Gauntlets +1",
-        legs = "Pummeler's Cuisses +3",
-        feet = "Pummeler's Calligae +3",
-        neck = "War. Beads +1",
-        waist = "Ioskeha Belt +1",
-        ear1 = "Telos Earring",
-        ear2 = "Suppanomimi",
-        ring1 = "Moonlight Ring",
-        ring2 = "Defending Ring",
-        back = Cichol.Acc
-    }
-
-    sets.engaged.DT = {
-        ammo = "Staunch Tathlum +1",
-        head = "Souveran Schaller +1",
-        body = "Hjarrandi Breastplate",
-        hands = "Souveran Handschuhs +1",
-        legs = "Souveran Diechlings +1",
-        feet = "Souveran Schuhs +1",
-        neck = "War. Beads +1",
-        waist = "Ioskeha Belt +1",
-        ear1 = "Telos Earring",
-        ear2 = "Odnowa Earring +1",
-        ring1 = {name = "Moonlight Ring", priority = 15, bag = "wardrobe3"},
-        ring2 = {name = "Moonlight Ring", priority = 15, bag = "wardrobe2"},
-        back = Cichol.Acc
-    }
-
-    -- Status Swaps --
-
-    sets.Blind = {hands = "Regal Captain's Gloves"}
-end
-
-function bind_keys()
-    send_command('bind f9 gs c cycle AccuracyMode')
-    send_command('bind f10 gs c set EngagedMode Hybrid')
-    send_command('bind f11 gs c set EngagedMode DT')
-    send_command('bind f12 gs c set EngagedMode Normal')
-end
-
-function file_unload()
-    send_command('unbind f9')
-    send_command('unbind f10')
-    send_command('unbind f11')
-    send_command('unbind f12')
-end
-
-function build_GUI()
-    GUI_pos = {}
-    GUI_pos.x = 1732
-    GUI_pos.y = 80
-
-    EM = IconButton {
-        x = GUI_pos.x + 0,
-        y = GUI_pos.y + 0,
-        var = EngagedMode,
-        icons = {
-            {img = 'DD Normal.png', value = 'Normal'},
-            {img = 'DD Hybrid.png', value = 'Hybrid'},
-            {img = 'Emergancy DT.png', value = 'DT'}
-        },
-        command = 'gs c update'
-    }
-    EM:draw()
-
-    local wi = {}
-    for i, v in ipairs(WeaponMode) do
-        wi[i] = {img = WeaponTable[v].img, value = v}
+require('J-Swap')
+local M = require('J-Mode')
+require('GUI')
+local command = require('J-Swap-Command')
+local events = require('J-Swap-Events')
+local bind_key = require('J-Bind')
+rolls = rolls or require('J-Rolltracker')
+local haste = require('J-Haste')
+local pred_factory = require('J-Predicates')
+
+local gear = require('Jyouya-gear')
+
+bind_key('^`', 'input /ja "Provoke" <t>')
+bind_key('f10', 'gs c set engaged Hybrid')
+bind_key('f12', 'gs c set engaged Normal')
+
+local main_hands = M {
+    ['description'] = 'Main Hand',
+    'Chango',
+    'Ukonvasara',
+    'Montante +1',
+    'Raetic Algol +1',
+    'Shining One',
+    'Kaja Staff',
+    'Drepanum',
+    'Karambit',
+    'Naegling',
+    'Tanmogayi +1',
+    'Dolichenus',
+    'Farsha',
+    'Beryllium Mace +1'
+}
+
+local abyssea_main_hands = M {
+    ['description'] = 'Main Hand',
+    'Bronze Dagger',
+    'Ibushi Shinai',
+    'Irradiance Blade',
+    'Bronze Zaghnal',
+    'Harpoon',
+    'Soulflayer\'s Wand',
+    'Lamia Staff',
+    'Debahocho',
+    'Mutsunokami'
+}
+
+local item_id_memo = setmetatable({}, {
+    __index = function(t, k)
+        t[k] = res.items:with('en', k).id
+        return t[k]
     end
-    WM = IconButton {
-        x = GUI_pos.x + 0,
-        y = GUI_pos.y + 54,
-        var = WeaponMode,
-        icons = wi,
-        command = 'gs c update'
-    }
-    WM:draw()
-
-    --[[FM = ToggleButton{
-		x = GUI_pos.x + 0,
-		y = GUI_pos.y + 54 * 2,
-		var = FencerMode,
-		iconUp = 'WAR/Fencer Off.png',
-		iconDown = 'WAR/Fencer On.png',
-		command = 'gs c update'
-	}
-	FM:draw()]]
-
-    local oh = {}
-    for i, v in ipairs(Offhand) do
-        oh[i] = {img = OffhandTable[v].img, value = v}
+})
+local function item_type(item)
+    local item_table = res.items[item_id_memo[type(item) == 'table' and
+                           item.name or item]]
+    local item_slots = item_table.slots
+    if item_table.skill == 1 then
+        return 'h2h'
+    elseif item_slots:contains(0) and item_slots:contains(1) then
+        return '1h'
+    elseif item_slots:contains(0) and not item_slots:contains(1) then
+        return '2h'
+    elseif item_slots:contains(1) and not item_slots:contains(0) then
+        return item_table.type == 5 and 'shield' or 'grip'
     end
-    OH_button = IconButton {
-        x = GUI_pos.x + 0,
-        y = GUI_pos.y + 54 * 2,
-        var = Offhand,
-        icons = oh,
-        command = function()
-            OffhandMode:set('Manual');
-            windower.send_command('gs c update');
-            OH_button:hideoverlay()
-        end,
-        overlay = {img = 'WAR/Auto.png', hide_on_click = false}
-        -- on_click = function() OffhandMode:set('Manual') end
-    }
-    OH_button:draw()
-    OH_button:showoverlay()
-
-    AbbyM = ToggleButton {
-        x = GUI_pos.x + 0,
-        y = GUI_pos.y + 54 * 3,
-        var = AbysseaMode,
-        iconUp = 'WAR/Atomos.png',
-        iconDown = 'WAR/Atomos.png',
-        command = function()
-            if AbysseaMode.value then
-                AbbyW:enable();
-                AbbyW:show()
-            else
-                AbbyW:disable();
-                AbbyW:hide()
-            end
-            windower.send_command('gs c update')
-        end
-    }
-    AbbyM:draw()
-
-    local aw = {}
-    for i, v in ipairs(AbysseaWeapon) do
-        aw[i] = {img = AWeaponTable[v].img, value = v}
-    end
-    AbbyW = IconButton {
-        x = GUI_pos.x + 0,
-        y = GUI_pos.y + 54 * 4,
-        var = AbysseaWeapon,
-        icons = aw,
-        command = 'gs c update'
-    }
-    AbbyW:draw()
-    AbbyW:hide()
-
-    AccDisplay = TextCycle {
-        x = GUI_pos.x + 0,
-        y = GUI_pos.y + 54 * 5,
-        var = AccuracyMode,
-        align = 'left',
-        width = 112,
-        command = 'gs c update'
-    }
-    AccDisplay:draw()
-    IdleDisplay = TextCycle {
-        x = GUI_pos.x + 0,
-        y = GUI_pos.y + 54 * 5 + 32,
-        var = IdleMode,
-        align = 'left',
-        width = 112,
-        command = 'gs c update'
-    }
-    IdleDisplay:draw()
-    OHModeDisplay = TextCycle {
-        x = GUI_pos.x + 0,
-        y = GUI_pos.y + 54 * 5 + 32 * 2,
-        var = OffhandMode,
-        align = 'left',
-        width = 112,
-        command = function()
-            if OffhandMode.value == 'Auto' then
-                OH_button:showoverlay();
-                windower.send_command('gs c update')
-            else
-                OH_button:hideoverlay()
-            end
-        end
-    }
-    OHModeDisplay:draw()
-    HMDisplay = TextCycle {
-        x = GUI_pos.x + 0,
-        y = GUI_pos.y + 54 * 5 + 32 * 3,
-        var = DWMode,
-        align = 'left',
-        width = 112,
-        command = function() windower.send_command('gs c update') end,
-        start_hidden = true,
-        disabled = true
-    }
-    HMDisplay:draw()
-    DWDisplay = TextCycle {
-        x = GUI_pos.x + 0,
-        y = GUI_pos.y + 54 * 5 + 32 * 4,
-        var = DWLevel,
-        align = 'left',
-        width = 112,
-        command = function()
-            DWMode:set('Manual');
-            windower.send_command('gs c update')
-        end,
-        start_hidden = true,
-        disabled = true
-    }
-    DWDisplay:draw()
+    print('something has gone horribly wrong')
 end
-
-function self_command(commandArgs)
-    local commandArgs = commandArgs
-    if type(commandArgs) == 'string' then
-        commandArgs = T(commandArgs:split(' '))
-        if #commandArgs == 0 then return end
-    end
-    local handleCmd = table.remove(commandArgs, 1)
-    if selfCommandMaps[handleCmd] then
-        selfCommandMaps[handleCmd](commandArgs)
-    end
-end
-
-function get_weapons()
-    local weps = {}
-    if AbysseaMode.value then
-        weps = AWeaponTable[AbysseaWeapon.value]
-    else
-        weps = WeaponTable[WeaponMode.value]
-        if weps.type == '1H' then
-            weps = set_combine(weps, OffhandTable[Offhand.value])
-            -- table.map(weps, print)
+do
+    settings.sub = M {['description'] = 'Off Hand', 'Utu Grip'}
+    local subs = T {
+        'Zantetsuken', 'Reikiko', 'Barbarity +1', 'Blurred Shield +1'
+    }
+    local subs_1h = T {}
+    local subs_1h_current = subs_1h[1]
+    local function fill_subs_1h()
+        if player.sub_job == 'NIN' or player.sub_job == 'DNC' then
+            subs_1h = subs
         else
-            weps = set_combine(weps, sets.Grip)
-        end
-    end
-    return weps
-end
-
-function get_idle_set()
-    local dw_level = get_dw_level()
-    if dw_level ~= DWLevel.value and DWMode.value == 'Auto' then
-        DWLevel:set(tostring(dw_level))
-    end
-    return set_combine(sets.idle[IdleMode.value], get_weapons())
-end
-
-function get_engaged_set() -- sets.engaged[DefenseMode].(DW or WeaponMode).Accuracy.AM3
-    local equipset = sets.engaged
-    if equipset[EngagedMode.value] then
-        equipset = equipset[EngagedMode.value]
-    end
-    
-    if equipset[WeaponMode.value] then -- sets.engaged[DefenseMode].Chango or something if desired.  Can also do .mainhand.offhand if you wanna get specific
-        equipset = equipset[WeaponMode.value]
-        if equipset[Offhand.value] then
-            equipset = equipset[Offhand.value]
-        end
-    end
-    if equipset.DW and WeaponTable[WeaponMode.value].type == '1H' and
-        OffhandTable[Offhand.value].DW and
-        (player.sub_job == 'DNC' or player.sub_job == 'NIN') then
-        equipset = equipset.DW
-        local dw_level = get_dw_level()
-        if dw_level ~= DWLevel.value and DWMode.value == 'Auto' then
-            DWLevel:set(tostring(dw_level))
-        end
-        if equipset[DWLevel.value] then
-            equipset = equipset[DWLevel.value]
-        end
-
-    end
-    if equipset[AccuracyMode.value] then
-        equipset = equipset[AccuracyMode.value]
-    end
-    if equipset.AM3 and buffactive['Aftermath: Lv.3'] then
-        equipset = equipset.AM3
-    end
-
-    if buffactive['Flash'] or buffactive['Blindness'] then
-        equipset = set_combine(equipset, sets.Blind)
-    end
-
-    local neck = AbysseaMode.value and {neck = "Combatant's Torque"} or {}
-    local head = AbysseaMode.value and AbysseaWeapon.value == 'Great Katana' and
-                     {head = "Kengo Hachimaki"} or {}
-    equipset = set_combine(equipset, get_weapons(), neck, head)
-    return equipset
-end
-
-function update_gear() -- will put on the appropriate engaged or idle set
-    if OffhandMode.value == 'Auto' then auto_offhand() end
-    if WeaponTable[WeaponMode.value].type == '1H' and
-        OffhandTable[Offhand.value].DW then
-        HMDisplay:enable()
-        HMDisplay:show()
-        DWDisplay:enable()
-        DWDisplay:show()
-    else
-        HMDisplay:disable()
-        HMDisplay:hide()
-        DWDisplay:disable()
-        DWDisplay:hide()
-    end
-
-    if player.status == 'Engaged' then
-        equip(get_engaged_set())
-    else
-        equip(get_idle_set())
-    end
-end
-
-function auto_offhand()
-    if WeaponTable[WeaponMode.value].type == '1H' then
-        local OH = ''
-        if player.sub_job == 'DNC' or player.sub_job == 'NIN' then
-            OH = WeaponTable[WeaponMode.value].offhand.default
-            for i, v in ipairs(WeaponTable[WeaponMode.value].offhand) do
-                if buffactive[v.buff] then OH = v.weapon end
-            end
-
-        else
-            OH = sets.Shield.sub
-        end
-        Offhand:set(OH)
-    end
-end
-
-function pretarget(spell) -- Would also check range here, if we wanted to avoid getting 'too far'
-    if spell.type == 'WeaponSkill' then
-        if player.tp < 1000 or buffactive['Stun'] or buffactive['Terror'] or
-            buffactive['Amnesia'] or buffactive['Sleep'] or
-            buffactive['Petrification'] then cancel_spell() end
-    end
-    -- TODO: cancel berserk/aggressor if they're on cooldown, so we don't drop TP.
-end
-
-function precast(spell, action)
-    if spell.action_type == 'Magic' then
-        if spell.name:contains('Utsusemi') then
-            equip(sets.precast.Utsusemi)
-        elseif sets.precast[spell.name] then
-            equip(sets.precast[spell.name])
-        elseif sets.precast[spell.skill] then
-            equip(sets.precast[spell.skill])
-        else
-            equip(sets.precast)
-        end
-    elseif spell.type == 'WeaponSkill' then
-        local equipset = sets.WS
-        if equipset[spell.name] then equipset = equipset[spell.name] end
-        if equipset['Mighty Strikes'] and buffactive['Mighty Strikes'] then
-            equipset = equipset['Mighty Strikes']
-        end
-        if equipset['Brazen Rush'] and buffactive['Brazen Rush'] then
-            equipset = equipset['Brazen Rush']
-        end
-        if equipset.Fencer and OffhandTable[Offhand.value].Fencer then
-            equipset = equipset.Fencer
-        end
-        if equipset.TP then -- sets.WS['Impulse Drive'].TP[2000].Mid.Day will be used when over 2000 TP
-            local t = 1000
-            local use_tp_set = false
-            for tp, set in pairs(equipset.TP) do
-                if tp > t and player.tp + (buffactive['warcry'] and 500 or 0) >
-                    tp then
-                    t = tp
-                    use_tp_set = true
+            subs_1h = T {}
+            -- Doing this with a loop because table.filter breaks array-like tables 
+            for item in table.it(subs) do
+                if item_type(item) == 'shield' then
+                    subs_1h:append(item)
                 end
             end
-            if use_tp_set then equipset = equipset.TP[t] end
         end
-        if equipset[AccuracyMode.value] then
-            equipset = equipset[AccuracyMode.value]
-        end
-        if equipset.Day then
-            if world.time < 1020 or world.time >= 420 then
-                equipset = equipset.Day
-            end
-        elseif equipset.Night then
-            if world.time >= 1020 or world.time < 420 then
-                equipset = equipset.Night
-            end
-        end
-
-        local neck = AbysseaMode.value and {neck = "Combatant's Torque"} or {}
-        equip(equipset, neck)
-        if Obi_WS:contains(spell.name) and
-            (world.weather_element == spell.element or world.day_element ==
-                spell.element) then equip(sets.Obi) end
-    elseif spell.name:contains('Waltz') then
-        equip(sets.precast.Waltz)
-    elseif spell.name:contains('Step') then
-        equip(sets.precast.Step)
-    elseif spell.type == 'JobAbility' then
-        if sets.JA[spell.name] then equip(sets.JA[spell.name]) end
+        subs_1h_current = subs_1h[1]
     end
-
-    local neck = AbysseaMode.value and {neck = "Combatant's Torque"} or {}
-    local head = AbysseaMode.value and AbysseaWeapon.value == 'Great Katana' and
-                     {head = "Kengo Hachimaki"} or {}
-    equip(get_weapons(), neck, head)
+    fill_subs_1h()
+    for k, v in pairs(subs_1h) do print(k, v) end
+    events.sub_job_change:register(fill_subs_1h)
+    local subs_2h = T {'Utu Grip'}
+    local prev_main_type = '2h'
+    local function on_main_change(m)
+        print('on main change')
+        local main_type = item_type(m.value)
+        print('main type: ', main_type)
+        if prev_main_type ~= main_type then
+            if prev_main_type == '1h' then
+                subs_1h_current = settings.sub.value
+            end
+            prev_main_type = main_type
+            if main_type == '2h' then
+                settings.sub:options(subs_2h:unpack())
+            elseif main_type == '1h' then
+                settings.sub:options(subs_1h:unpack())
+                settings.sub:set(subs_1h_current)
+            else -- h2h
+                settings.sub:options('Empty')
+            end
+        end
+        windower.send_command('gs c update')
+    end
+    main_hands.on_change:register(on_main_change)
 end
 
-function midcast(spell, action)
-    if spell.action_type == 'Magic' then
-        if spell.name:contains('Utsusemi') then
-            equip(sets.midcast.Utsusemi)
-        elseif sets.midcast[spell.name] then
-            equip(sets.midcast[spell.name])
-        elseif sets.midcast[spell.skill] then
-            equip(sets.midcast[spell.skill])
+local function update_if_not_midaction()
+    if not midaction() then windower.send_command('gs c update') end
+end
+
+abyssea_main_hands.on_change:register(update_if_not_midaction)
+settings.sub.on_change:register(update_if_not_midaction)
+
+settings.accuracy = M {
+    ['description'] = 'Accuracy Mode',
+    'Normal',
+    'Mid',
+    'High'
+}
+settings.accuracy.on_change:register(update_if_not_midaction)
+
+settings.engaged = M {['description'] = 'Engaged Mode', 'Normal', 'Hybrid'}
+settings.engaged.on_change:register(update_if_not_midaction)
+
+do
+    settings.WeaponSkill = M {'Normal', 'Abyssea'}
+    settings.abyssea = M(false, 'Abyssea Mode')
+    settings.abyssea.on_change:register(function(m)
+        settings.WeaponSkill:set(m.value and 'Abyssea' or 'Normal')
+        settings.main = m.value and abyssea_main_hands or main_hands
+        update_if_not_midaction()
+    end)
+end
+
+settings.main = main_hands
+
+do -- Abyssea Mode
+    local abyssea_mode_engaged = {
+        test = function(equip_set)
+            if settings.abyssea.value then
+                equip_set.swaps = equip_set.swaps or {}
+                table.append(equip_set.swaps, {
+                    test = function() return true end,
+                    neck = 'Combatant\'s Torque',
+                    head = settings.main.value == 'Mutsunokami' and
+                        'Kengo Hachimaki' or nil
+                })
+            end
+        end
+    }
+    rules.engaged:append(abyssea_mode_engaged)
+end
+
+settings.dual_wield_mode = M {
+    ['description'] = 'Dual Wield Mode',
+    'Auto',
+    'Manual'
+}
+settings.dual_wield_level = M {['description'] = 'Dual Wield Level', '0', '11'}
+
+do -- Dual Wield rule
+    local function dw_test()
+        local main = settings.main.value
+        local sub = settings.sub.value
+
+        return (player.sub_job == 'NIN' or player.sub_job == 'DNC') and
+                   item_type(main) == '1h' and item_type(sub) == '1h'
+
+    end
+    local function dw_level()
+        if settings.dual_wield_mode.value == 'Auto' then
+            local dw_needed = haste.dw_needed
+            local dw_level = math.max(unpack(settings.dual_wield_level))
+            for _, dw in ipairs(settings.dual_wield_level) do
+                local dw_number = tonumber(dw)
+                if dw_number < dw_level and dw_number >= dw_needed then
+                    dw_level = dw_number
+                end
+            end
+            settings.dual_wield_level:set(tostring(dw_level))
+        end
+        return 'DW' .. tostring(settings.dual_wield_level.value)
+    end
+    rules.engaged:append({test = dw_test, key = dw_level})
+    rules.idle:append({test = dw_test, key = dw_level})
+end
+
+do -- Fencer rule
+    local function fencer_test()
+        local main = settings.main.value
+        local sub = settings.sub.value
+
+        return item_type(main) == '1h' and item_type(sub) == 'shield'
+    end
+
+    rules.engaged:append({test = fencer_test, key = 'Fencer'})
+end
+
+-- Engaged Accuracy
+rules.engaged:append({
+    test = function() return true end,
+    key = function(equip_set)
+        for i = settings.accuracy.index, 1, -1 do
+            if equip_set[settings.accuracy[i]] then
+                return settings.accuracy[i]
+            end
+        end
+    end
+})
+
+do
+    local function abyssea_offhand(equip_set, spell)
+        if settings.abyssea.value then
+            equip_set.main = settings.main.value
+            equip_set.sub = 'empty'
+            equip_set.swap_managed_weapon = function() return true end
+        end
+    end
+    rules.engaged:append({test = abyssea_offhand})
+    rules.idle:append({test = abyssea_offhand})
+    rules.precast:append({test = abyssea_offhand})
+    rules.midcast:append({test = abyssea_offhand})
+end
+
+local fighters_roll_effect
+do
+    local ifrits_favor = 0
+    -- Can't track favor very accurately, will assume 24 potency
+    events.buff_change:register(function(buff, gain)
+        if buff == 'Ifrit\'s Favor' then ifrits_favor = gain and 24 or 0 end
+    end)
+    fighters_roll_effect = function(value)
+        return function()
+            return ifrits_favor + rolls['Fighter\'s Roll'].effect_value >= value
+        end
+    end
+end
+
+events.load:register(function()
+    windower.send_command(
+        'imput /macro book 5;wait .1; input /macro set 1;wait 2;input /lockstyleset 3')
+
+    sets.item['Holy Water'] = {neck = 'Nicander\'s Necklace', ring1 = 'Purity Ring'}
+
+    sets.JA['Mighty Strikes'] = {hands = 'Agoge Mufflers +2'}
+    sets.JA['Blood Rage'] = {body = 'Boii Lorica +1'}
+    sets.JA.Warcry = {head = 'Agoge Mask +3'}
+    sets.JA.Berserk = {
+        main = 'Instigator',
+        body = 'Pummeler\'s Lorica +3',
+        feet = 'Agoge Calligae +3',
+        back = gear.Cichol.VIT_WSD, -- A bit of vit to reduce enemy dSTR
+        swap_managed_weapon = function()
+            return player.tp < 1000 and
+                       not (buffactive['Aftermath: Lv.3'] and
+                           settings.main.value ~= 'Chango')
+        end
+    }
+    sets.JA.Aggressor = {
+        main = 'Instigator',
+        head = 'Pummeler\'s Mask +2',
+        body = 'Agoge Lorica + 3',
+        swap_managed_weapon = function()
+            return player.tp < 1000 and
+                       not (buffactive['Aftermath: Lv.3'] and
+                           settings.main.value ~= 'Chango')
+        end
+    }
+    sets.JA.Provoke = {
+        head = 'Halitus Helm',
+        body = 'Emet Harness +1',
+        hands = 'Pummeler\'s Mufflers +1',
+        legs = gear.Odyssean.Legs.VIT_WSD,
+        neck = 'Moonlight Necklace',
+        waist = 'Kasiri Belt',
+        ear1 = 'Friomisi Earring',
+        ear2 = 'Cryptic Earring',
+        ring1 = 'Petrov Ring',
+        ring2 = 'Eihwaz Ring'
+    }
+
+    sets.precast = { --                                 FC 
+        ammo = 'Impatiens',
+        head = gear.Odyssean.Head.FC, -- 7 FC           7  
+        body = 'Sacro Breastplate', -- 10 FC            17
+        hands = 'Leyline Gloves', -- 8 FC               25
+        legs = gear.Odyssean.Legs.FC, -- 7 FC           32
+        feet = gear.Odyssean.Feet.FC, -- 12 FC          44
+        neck = 'Baetyl Pendant', -- 4 FC                48
+        ear1 = 'Loquacious Earring', -- 2 FC            
+        ear2 = 'Etiolation Earring', -- 1 FC            
+        ring1 = 'Prolix Ring', -- 2 FC                  
+        ring2 = 'Gelatinous Ring +1',
+        back = gear.Cichol.FC -- 10                     
+    }
+
+    sets.idle = { --                                    PDT MDT
+        ammo = 'Staunch Tathlum +1', -- 3 DT            3   3
+        head = 'Hjarrandi Helm', -- 10 DT               13  13
+        body = 'Sacro Breastplate',
+        hands = 'Agoge Mufflers +3', -- 6 PDT           19  13
+        legs = 'Pummeler\'s Cuisses +3', -- 5 PDT       24  13
+        feet = 'Pummeler\'s Calligae +3',
+        neck = 'Loricate Torque +1', -- 6 DT            30  19
+        waist = 'Asklepian Belt',
+        ear1 = 'Odnowa Earring +1', -- 2 MDT                21
+        ear2 = 'Genmei Earring', -- 2 PDT               32
+        ring1 = gear.MoonlightRing1, -- 5 DT            37  26
+        ring2 = 'Gelatinous Ring +1', -- 7 PDT, -1 MDT  44  25
+        back = 'Moonlight Cape' -- 6 DT                 50  31
+    }
+
+    sets.midcast = { --                                     DT  SIRD
+        ammo = 'Staunch Tathlum +1', -- 3 DT, 11 SIRD       3   21
+        head = gear.Souveran.Head.PathD, -- 4 PDT, 20 SIRD  7   41
+        body = 'Hjarrandi Breastplate', -- 12 DT            19
+        hands = 'Pummeler\'s Mufflers +3', -- 7 PDT         26
+        legs = 'Founder\'s Hose', -- 30 SIRD                    71
+        feet = gear.Odyssean.Feet.FC, -- 20 SIRD                91
+        neck = 'Moonlight Necklace', -- 15 SIRD                 104
+        waist = 'Flume Belt +1', -- 4 PDT                   30
+        ear1 = 'Odnowa Earring +1',
+        ear2 = 'Genmei Earring', -- 2 PDT                   32
+        ring1 = gear.MoonlightRing1, -- 5 DT                37
+        ring2 = 'Gelatinous Ring +1', -- 7 PDT              44
+        back = 'Moonlight Cape', -- 6 DT                    50
+    }
+
+    -- 33 base DA, 15 STP from /sam
+    sets.engaged = { --                                      DA  TA  STP QA
+        ammo = 'Aurgelmir Orb +1', -- 5 STP                         20
+        head = 'Flamma Zucchetto +2', -- 5 TA, 6 STP            5   26
+        body = gear.Valorous.Body.DA, -- 7 DA, 3 STP        40      29  
+        hands = 'Sulevia\'s Gauntlets +2', -- 6 DA             46
+        legs = 'Pummeler\'s Cuisses +3', -- 11 DA           57
+        feet = 'Pummeler\'s Calligae +3', -- 9 DA, 4 STP    66      33
+        neck = 'War. Beads +2', -- 7 DA               73
+        waist = 'Ioskeha Belt +1', -- 9 DA                  82
+        ear1 = 'Brutal Earring', -- 5 DA, 1 STP             87      34
+        ear2 = 'Cessance Earring', -- 3 DA, 3 STP           90      37
+        ring1 = 'Niqmaddu Ring', -- 3 QA                                3
+        ring2 = gear.MoonlightRing2, -- 5 STP                          42
+        back = gear.Cichol.DEX_DA, -- 10 DA                 100 5   42  3
+        swaps = {
+            { -- 1 or 9, regal
+                test = fighters_roll_effect(13),
+                body = 'Hjarrandi Breastplate', -- -7 DA, +7 STP
+                hands = gear.Emicho.Hands.PathB -- -6 DA, +7 STP
+            }, { --
+                test = fighters_roll_effect(15),
+                ear2 = 'Telos Earring' -- -2 DA, +2 STP
+            }, {
+                test = fighters_roll_effect(17),
+                ear1 = 'Cessance Earring' -- -2 DA, +2 STP
+            }, {
+                test = fighters_roll_effect(20),
+                ear1 = 'Dedition Earring' -- -3 DA, +5 STP
+            }, {
+                test = fighters_roll_effect(23),
+                ear1 = 'Brutal Earring', -- +2 DA, -2 STP
+                ear2 = 'Cessance Earring', -- + 2 DA, -2 STP
+                back = gear.Cichol.DEX_STP -- - 10 DA, +10 STP
+            }, {
+                test = fighters_roll_effect(25),
+                ear2 = 'Telos Earring' -- -2 DA, +2 STP
+            }, {
+                test = fighters_roll_effect(27),
+                ear1 = 'Cessance Earring' -- -2 DA, +2 STP
+            }, {
+                test = fighters_roll_effect(29),
+                legs = gear.Odyssean.Legs.STP, -- -9 DA, + 12 STP
+                ear1 = 'Dedition Earring', -- -3 DA, +5 STP
+                back = gear.Cichol.DEX_DA -- +10 DA, - 10 STP
+            }, {
+                test = fighters_roll_effect(33),
+                hands = 'Sulevia\'s Gauntlets +2', -- +6 DA, -7 STP
+                back = gear.Cichol.DEX_STP -- - 10 DA, + 10 STP
+            }, {
+                test = pred_factory.p_or(pred_factory.buff_active('Blindness'),
+                                         pred_factory.buff_active('Flash')),
+                hands = 'Regal Captain\'s Gloves'
+            }
+        }
+    }
+
+    sets.engaged.DW11 = { --                                DA  STP TA  QA  DW
+        ammo = 'Aurgelmir Orb +1', -- 5 STP                 33  5   0   0   0
+        head = 'Hjarrandi Helm', -- 6 DA, 7 STP             39  12
+        body = gear.Emicho.Body.PathB, -- 9 DA              48
+        hands = gear.Emicho.Hands.PathD, -- 7 STP, 6 DW         18          6
+        legs = 'Pummeler\'s Cuisses +3', -- 11 DA           59
+        feet = 'Pummeler\'s Calligae +3', -- 9 DA, 4 STP    68  22
+        neck = 'War. Beads +2', -- 7 DA                     75
+        waist = 'Ioskeha Belt +1', -- 9 DA                  84
+        ear1 = 'Brutal Earring', -- 5 DA , 1 STP            89  23
+        ear2 = 'Suppanomimi', -- 5 DW                                       11
+        ring1 = 'Niqmaddu Ring', -- 3 QA                                3
+        ring2 = 'Petrov Ring', -- 1 DA, 5 STP               90  28
+        back = gear.Cichol.DEX_DA, -- 10 DA                 100
+        swaps = {
+            {
+                test = fighters_roll_effect(11),
+                head = 'Flamma Zucchetto +2', -- -6 DA, -1 STP, +5 TA
+                ear1 = 'Dedition Earring' -- -5 DA, +7 STP
+            }, {
+                test = fighters_roll_effect(13),
+                body = gear.Valorous.Body.DA -- -2 DA, +3 STP
+            }, {
+                test = fighters_roll_effect(20),
+                body = 'Hjarrandi Breastplate' -- -7 DA, +7 STP
+            }, {
+                test = fighters_roll_effect(30),
+                back = gear.Cichol.DEX_STP -- -10 DA, +10 STP
+            }, {
+                test = pred_factory.p_or(pred_factory.buff_active('Blindness'),
+                                            pred_factory.buff_active('Flash')),
+                hands = 'Regal Captain\'s Gloves'
+
+            }
+        }
+    }
+
+    sets.engaged.Farsha = {}
+    sets.engaged.Farsha.AM3 = { --                          DA
+        ammo = 'Yetshila +1', --            
+        head = 'Flamma Zucchetto +2', -- 5 TA, 7 STP
+        body = 'Hjarrandi Breastplate', -- 10 STP, 12 DT
+        hands = 'Sulevia\'s Gauntlets +2', -- 6 DA          39
+        legs = 'Agoge Cuisses +3', -- 6 DA                  45
+        feet = 'Pummeler\'s Calligae +3', -- 9 DA, 4 STP    54
+        neck = 'War. Beads +2', -- 7 DA               61
+        waist = 'Ioskeha Belt +1', -- 9 DA                  70
+        ear1 = 'Brutal Earring', -- 5 DA, 1 STP             75
+        ear2 = 'Cessance Earring', -- 3 DA, 3 STP           78
+        ring1 = 'Niqmaddu Ring', -- 3 QA
+        ring2 = 'Hetairoi Ring', -- 2 TA
+        back = gear.Cichol.STR_DA, -- 10 DA                 88
+        swaps = {
+            {test = fighters_roll_effect(18), hands = 'Flamma Manopolas +2'},
+            {test = fighters_roll_effect(28), back = gear.Cichol.DEX_Crit}, {
+                test = fighters_roll_effect(30),
+                ear2 = 'Telos Earring' -- -2 DA, +2 STP
+            }, {
+                test = fighters_roll_effect(32),
+                ear1 = 'Cessance Earring' -- -2 DA, +2 STP
+            }, {
+                test = pred_factory.p_or(pred_factory.buff_active('Blindness'),
+                                         pred_factory.buff_active('Flash')),
+                hands = 'Regal Captain\'s Gloves'
+            }
+        }
+    }
+    sets.engaged.Farsha.AM3.DW11 = set_combine(sets.engaged.Farsha.AM3, {
+        ear2 = 'Suppanomimi',
+        hands = gear.Emicho.Hands.PathD,
+        swaps = { -- Set has 79 DA
+            {test = fighters_roll_effect(23), ear1 = 'Cessance Earring'},
+            {test = fighters_roll_effect(25), ear1 = 'Telos Earring'},
+            {test = fighters_roll_effect(26), ear1 = 'Dedition Earring'}, {
+                test = fighters_roll_effect(31),
+                ear1 = 'Brutal Earring',
+                back = gear.Cichol.DEX_Crit
+            }, {
+                test = pred_factory.p_or(pred_factory.buff_active('Blindness'),
+                                         pred_factory.buff_active('Flash')),
+                hands = 'Regal Captain\'s Gloves'
+            }
+        }
+    })
+
+    sets.engaged.Ukonvasara = {}
+    sets.engaged.Ukonvasara.AM3 = set_combine(sets.engaged.Farsha.AM3, {})
+
+    sets.engaged.Hybrid = { --                              DA  STP PDT MDT
+        ammo = 'Aurgelmir Orb +1', -- 5 STP                    20
+        head = 'Hjarrandi Helm', -- 6 DA, 7 STP, 10 DT      39      10  10
+        body = 'Hjarrandi Breastplate', -- 10 STP, 12 DT    39  32  22  22
+        hands = 'Sulevia\'s Gauntlets +2', -- 6 DA, 5 DT    45      27  27
+        legs = 'Pummeler\'s Cuisses +3', -- 11 DA, 5 PDT    56      32
+        feet = 'Pummeler\'s Calligae +3', -- 9 DA, 4 STP    65  36  
+        neck = 'War. Beads +2', -- 7 DA               72
+        waist = 'Tempus Fugit',
+        ear1 = 'Cessance Earring', -- 3 DA, 3 STP           75  39
+        ear2 = 'Telos Earring', -- 5 STP, 1 DA              76  40
+        ring1 = gear.MoonlightRing1, -- 5 STP, 5 DT             45  37  32
+        ring2 = gear.MoonlightRing2, -- 5 STP, 5 DT             50  42  37
+        back = gear.Cichol.DEX_DA, -- 10 DA, 10 PDT         86      52  
+        swaps = {
+            {
+                test = fighters_roll_effect(17),
+                ear1 = 'Dedition Earring' -- -3 DA, +5 STP
+            }, {test = fighters_roll_effect(27), back = gear.Cichol.DEX_STP}, {
+                test = pred_factory.p_or(pred_factory.buff_active('Blindness'),
+                                         pred_factory.buff_active('Flash')),
+                hands = 'Regal Captain\'s Gloves'
+            }
+        }
+    }
+
+    sets.engaged.Hybrid.DW11 = { --                         DA  STP PDT 
+        ammo = 'Staunch Tathlum +1', -- 3 DT                33  0   3     
+        head = 'Hjarrandi Helm', -- 6 DA, 7 STP, 10 DT      39  7   13
+        body = 'Hjarrandi Breastplate', -- 10 STP, 12 DT        17  25
+        hands = gear.Emicho.Hands.PathD, -- 7 STP               24
+        legs = 'Pummeler\'s Cuisses +3', -- 11 DA, 5 DT     50      30
+        feet = 'Pummeler\'s Calligae +3', -- 9 DA, 4 STP    59  28
+        neck = 'War. Beads +2', -- 7 DA               66
+        waist = 'Tempus Fugit',
+        ear1 = 'Brutal Earring', -- 5 DA, 1 STP             71  29
+        ear2 = 'Suppanomimi',
+        ring1 = gear.MoonlightRing1, -- 5 STP, 5 DT             34  35
+        ring2 = gear.MoonlightRing2, -- 5 STP, 5 DT             39  40
+        back = gear.Cichol.DEX_DA, -- 10 DA, 10 PDT         81      50
+        swaps = {
+            {test = fighters_roll_effect(21), ear1 = 'Cessance Earring'},
+            {test = fighters_roll_effect(24), ear1 = 'Dedition Earring'}, {
+                test = fighters_roll_effect(29),
+                ear1 = 'Brutal Earring',
+                back = gear.Cichol.DEX_STP
+            }, {test = fighters_roll_effect(31), ear1 = 'Cessance Earring'},
+            {test = fighters_roll_effect(33), ear1 = 'Telos Earring'}, {
+                test = pred_factory.p_or(pred_factory.buff_active('Blindness'),
+                                         pred_factory.buff_active('Flash')),
+                hands = 'Regal Captain\'s Gloves'
+            }
+        }
+    }
+
+    sets.engaged.Hybrid.Farsha = {}
+    sets.engaged.Hybrid.Farsha.AM3 = { --                   DA  STP PDT
+        ammo = 'Yetshila +1', --            
+        head = 'Hjarrandi Helm', -- 6 DA, 7 STP, 10 DT      39  22  10
+        body = 'Hjarrandi Breastplate', -- 10 STP, 12 DT        32  22  
+        hands = 'Sulevia\'s Gauntlets +2', -- 6 DA, 5 DT    45      27
+        legs = 'Pummeler\'s Cuisses +3', -- 11 DA, 5 PDT    56      32
+        feet = 'Pummeler\'s Calligae +3', -- 9 DA, 4 STP    65  36  
+        neck = 'War. Beads +2', -- 7 DA               72
+        waist = 'Tempus Fugit', --                       
+        ear1 = 'Brutal Earring', -- 5 DA, 1 STP             77  37
+        ear2 = 'Cessance Earring', -- 3 DA, 3 STP           80  40
+        ring1 = 'Niqmaddu Ring', -- 3 QA
+        ring2 = gear.MoonlightRing2, -- 5 STP, 5 DT             45  37
+        back = gear.Cichol.STR_DA, -- 10 DA, 10 DT          90      47
+        swaps = {
+            {
+                test = fighters_roll_effect(12),
+                ear2 = 'Telos Earring' -- -2 DA, +2 STP
+            }, {
+                test = fighters_roll_effect(14),
+                ear1 = 'Cessance Earring' -- -2 DA, +2 STP
+            }, {
+                test = fighters_roll_effect(17),
+                ear1 = 'Dedition Earring' -- -3 DA, +5 STP
+            }, {
+                test = fighters_roll_effect(20),
+                ear1 = 'Brutal Earring',
+                ear2 = 'Cessance Earring',
+                back = gear.Cichol.DEX_Crit
+            }, {
+                test = fighters_roll_effect(22),
+                ear2 = 'Telos Earring' -- -2 DA, +2 STP
+            }, {
+                test = fighters_roll_effect(24),
+                ear1 = 'Cessance Earring' -- -2 DA, +2 STP
+            }, {
+                test = fighters_roll_effect(27),
+                ear1 = 'Dedition Earring' -- -3 DA, +5 STP
+            }, {
+                test = pred_factory.p_or(pred_factory.buff_active('Blindness'),
+                                         pred_factory.buff_active('Flash')),
+                hands = 'Regal Captain\'s Gloves'
+            }
+        }
+    }
+    sets.engaged.Hybrid.Farsha.AM3.DW11 =
+        set_combine(sets.engaged.Hybrid.Farsha.AM3, {
+            ear2 = 'Suppanomimi',
+            hands = gear.Emicho.Hands.PathD,
+            ring1 = gear.MoonlightRing1,
+            swaps = { -- Set has 82 DA
+                {test = fighters_roll_effect(20), ear1 = 'Cessance Earring'},
+                {test = fighters_roll_effect(22), ear1 = 'Telos Earring'},
+                {test = fighters_roll_effect(23), ear1 = 'Dedition Earring'}, {
+                    test = fighters_roll_effect(28),
+                    ear1 = 'Brutal Earring',
+                    back = gear.Cichol.DEX_Crit
+                }, {test = fighters_roll_effect(30), ear1 = 'Cessance Earring'},
+                {test = fighters_roll_effect(32), ear1 = 'Telos Earring'},
+                {test = fighters_roll_effect(33), ear1 = 'Dedition Earring'}, {
+                    test = pred_factory.p_or(pred_factory.buff_active('Blindness'),
+                                             pred_factory.buff_active('Flash')),
+                    hands = 'Regal Captain\'s Gloves'
+                }
+            }
+        })
+    sets.engaged.Hybrid.Farsha.Fencer = set_combine(sets.engaged.Hybrid.Fencer,
+                                                    {})
+    sets.engaged.Hybrid.Ukonvasara = {}
+    sets.engaged.Hybrid.Ukonvasara.AM3 =
+        set_combine(sets.engaged.Hybrid.Farsha.AM3, {})
+
+    sets.engaged.Fencer = { --                      DA
+        ammo = 'Aurgelmir Orb +1',
+        head = 'Hjarrandi Helm', --                 39
+        body = gear.Valorous.Body.DA, --            46
+        hands = 'Sulevia\'s Gauntlets +2', --       52
+        legs = 'Agoge Cuisses +3', --               58
+        feet = 'Pummeler\'s Calligae +3', --        67
+        neck = 'War. Beads +2', --            74
+        waist = 'Ioskeha Belt +1', --               83
+        ear1 = 'Brutal Earring', --                 88
+        ear2 = 'Cessance Earring', --               91
+        ring1 = 'Niqmaddu Ring', --         
+        ring2 = 'Hetairoi Ring',
+        back = gear.Cichol.DEX_DA, --               101
+        swaps = {
+            {test = fighters_roll_effect(5), head = 'Flamma Zucchetto +2'},
+            {test = fighters_roll_effect(12), body = 'Hjarrandi Breastplate'},
+            {test = fighters_roll_effect(14), ear2 = 'Telos Earring'},
+            {test = fighters_roll_effect(16), ear1 = 'Cessance Earring'},
+            {test = fighters_roll_effect(19), ear1 = 'Dedition Earring'},
+            {test = fighters_roll_effect(25), hands = 'Flamma Manopolas +2'}, {
+                test = fighters_roll_effect(33),
+                ear2 = 'Cessance Earring',
+                back = gear.Cichol.DEX_STP
+            }, {
+                test = pred_factory.p_or(pred_factory.buff_active('Blindness'),
+                                         pred_factory.buff_active('Flash')),
+                hands = 'Regal Captain\'s Gloves'
+            }
+        }
+    }
+    sets.engaged.Hybrid.Fencer = { --                   DA
+        ammo = 'Staunch Tathlum +1', --                 33
+        head = 'Hjarrandi Helm', -- 6 DA                39
+        body = 'Hjarrandi Breastplate',
+        hands = 'Sulevia\'s Gauntlets +2', -- 6 DA      45
+        legs = 'Pummeler\'s Cuisses +3', -- 11 DA       56
+        feet = 'Pummeler\'s Calligae +3', -- 9 DA       65
+        neck = 'War. Beads +2', -- 7 DA           72
+        waist = 'Tempus Fugit',
+        ear1 = 'Brutal Earring', -- 5 DA                77
+        ear2 = 'Cessance Earring', -- 3 DA              80
+        ring1 = gear.MoonlightRing1,
+        ring2 = gear.MoonlightRing2,
+        back = gear.Cichol.DEX_DA, -- 10 DA             90
+        swaps = {
+            {test = fighters_roll_effect(12), ear2 = 'Telos Earring'},
+            {test = fighters_roll_effect(14), ear1 = 'Cessance Earring'},
+            {test = fighters_roll_effect(17), ear1 = 'Dedition Earring'},
+            {test = fighters_roll_effect(27), back = gear.Cichol.DEX_STP},
+            {test = fighters_roll_effect(33), hands = 'Agoge Mufflers +3'}, {
+                test = pred_factory.p_or(pred_factory.buff_active('Blindness'),
+                                         pred_factory.buff_active('Flash')),
+                hands = 'Regal Captain\'s Gloves'
+            }
+        }
+    }
+
+    -- 1 Crit rate is worth ~ .5 STP
+    sets.engaged['Hand-to-Hand'] = { --                     DA
+        ammo = 'Focal Orb', -- 2 DA                         35
+        head = 'Hjarrandi Helm', -- 6 DA, 7 STP             41
+        body = gear.Valorous.Body.DA, -- 7 DA, 3 STP        48
+        hands = 'Sulevia\'s Gauntlets +2', -- 6 DA          54
+        legs = 'Agoge Cuisses +3', -- 6 DA                  60
+        feet = 'Pummeler\'s Calligae +3', -- 9 DA, 4 STP    69
+        neck = 'War. Beads +2', -- 7 DA               76
+        waist = 'Ioskeha Belt +1', -- 9 DA                  85
+        ear1 = gear.MacheEarring1, -- 2 DA                  87
+        ear2 = gear.MacheEarring2, -- 2 DA                  89
+        ring1 = 'Niqmaddu Ring',
+        ring2 = 'Petrov Ring', -- 1 DA, 5 STP               90
+        back = gear.Cichol.DEX_DA, -- 10 DA                 100
+        swaps = {
+            {
+                test = fighters_roll_effect(13),
+                body = 'Hjarrandi Breastplate',
+                head = 'Flamma Zucchetto +2'
+            }, {test = fighters_roll_effect(19), hands = 'Flamma Manopolas +2'},
+            {test = fighters_roll_effect(21), ammo = 'Yetshila +1'},
+            {test = fighters_roll_effect(22), ring2 = 'Hetairoi Ring'},
+            {test = fighters_roll_effect(32), back = gear.Cichol.DEX_STP}, {
+                test = pred_factory.p_or(pred_factory.buff_active('Blindness'),
+                                         pred_factory.buff_active('Flash')),
+                hands = 'Regal Captain\'s Gloves'
+            }
+        }
+    }
+    sets.engaged.Hybrid['Hand-to-Hand'] =
+        {
+            ammo = 'Staunch Tathlum +1',
+            head = 'Flamma Zucchetto +2',
+            body = 'Hjarrandi Breastplate',
+            hands = 'Sulevia\'s Gauntlets +2',
+            legs = 'Pummeler\'s Cuisses +3',
+            feet = 'Pummeler\'s Calligae +3',
+            neck = 'War. Beads +2',
+            waist = 'Ioskeha Belt +1',
+            ear1 = gear.MacheEarring1,
+            ear2 = gear.MacheEarring2,
+            ring1 = gear.MoonlightRing1,
+            ring2 = gear.MoonlightRing2,
+            back = gear.Cichol.DEX_DA,
+            swaps = {
+                {
+                    test = pred_factory.p_or(pred_factory.buff_active('Blindness'),
+                                             pred_factory.buff_active('Flash')),
+                    hands = 'Regal Captain\'s Gloves'
+                }
+            }
+        }
+
+    sets.WS = {
+        ammo = 'Knobkierrie',
+        head = 'Agoge Mask +3',
+        body = 'Pummeler\'s Lorica +3',
+        hands = gear.Odyssean.Hands.STR_WSD,
+        legs = gear.Valorous.Legs.STR_WSD,
+        feet = 'Sulevia\'s Leggins +2',
+        neck = 'War. Beads +2',
+        waist = 'Sailfi Belt +1',
+        ear1 = 'Moonshade Earring',
+        ear2 = 'Thrud Earring',
+        ring1 = 'Niqmaddu Ring',
+        ring2 = 'Regal Ring',
+        back = gear.Cichol.STR_WSD,
+        swaps = {
+            {test = pred_factory.etp_gt(2750), ear1 = 'Lugra Earring +1'}, {
+                test = pred_factory.buff_active('Mighty Strikes'),
+                ammo = 'Yetshila +1',
+                hands = gear.Valorous.STR_Crit,
+                legs = gear.Valorous.STR_Crit,
+                feet = 'Boii Calligae +1'
+            }
+        }
+    }
+
+    -- all STP gear
+    sets.WS.Abyssea = {
+        ammo = 'Ginsen',
+        head = 'Sulevia\'s Mask +2',
+        body = gear.Valorous.Body.STP,
+        hands = gear.Emicho.Hands.PathD,
+        legs = gear.Odyssean.Legs.STP,
+        feet = 'Flamma Gambieras +2',
+        neck = 'Combatant\'s Torque',
+        waist = 'Kentarch Belt +1',
+        ear1 = 'Telos Earring',
+        ear2 = 'Dedition Earring',
+        ring1 = gear.MoonlightRing1,
+        ring2 = gear.MoonlightRing2,
+        back = gear.Cichol.STR_DA,
+        swaps = {
+            {
+                test = function()
+                    return settings.main.value == 'Mutsunokami'
+                end,
+                head = 'Kengo Hachimaki'
+            }
+        }
+    }
+
+    -- The fencer argument of the ETP function assumes blurred shield +1, since I don't use any other shields
+    sets.WS['Savage Blade'] = {
+        ammo = 'Knobkierrie',
+        head = 'Agoge Mask +3',
+        body = 'Pummeler\'s Lorica +3',
+        hands = gear.Odyssean.Hands.STR_WSD,
+        legs = gear.Valorous.Legs.STR_WSD,
+        feet = 'Sulevia\'s Leggings +2',
+        neck = 'War. Beads +2',
+        waist = 'Sailfi Belt +1',
+        ear1 = 'Thrud Earring',
+        ear2 = 'Moonshade Earring',
+        ring1 = 'Niqmaddu Ring',
+        ring2 = 'Regal Ring',
+        back = gear.Cichol.STR_WSD,
+        swaps = {
+            {test = pred_factory.etp_gt(2750, 2), ear2 = 'Lugra Earring +1'}, {
+                test = pred_factory.buff_active('Mighty Strikes'),
+                ammo = 'Yetshila +1',
+                legs = gear.Valorous.Legs.STR_Crit,
+                feet = 'Boii Calligae +1'
+            }
+        }
+    }
+
+    sets.WS['Decimation'] = { --                    DA
+        ammo = 'Aurgelmir Orb +1',
+        head = 'Flamma Zucchetto +2',
+        body = 'Dagon Breastplate',
+        hands = gear.Argosy.Hands.PathD, -- 5 DA    38
+        legs = gear.Argosy.Legs.PathD, -- 6 DA      42
+        feet = 'Flamma Gambieras +2', -- 6 DA       48
+        neck = 'War. Beads +2', -- 7 DA             55
+        waist = 'Sailfi Belt +1', -- 5 DA           60
+        ear1 = 'Brutal Earring', -- 5 DA            65
+        ear2 = 'Cessance Earring', -- 3 DA          68
+        ring1 = 'Niqmaddu Ring',
+        ring2 = 'Regal Ring',
+        back = gear.Cichol.STR_DA, -- 10 DA         78
+        swaps = {
+            {
+                test = function()
+                    return settings.engaged.value == 'Hybrid'
+                end,
+                hands = 'Sulevia\'s Gauntlets +2',
+                legs = 'Pummeler\'s Cuisses +3'
+            }, {test = fighters_roll_effect(25), neck = 'Fotia Gorget'}, {
+                test = pred_factory.buff_active('Mighty Strikes'),
+                ammo = 'Yetshila +1',
+                body = gear.Valorous.Body.STR_Crit,
+                hands = gear.Valorous.Hands.STR_Crit,
+                legs = gear.Valorous.Legs.STR_Crit,
+                feet = 'Boii Calligae +1'
+            }
+        }
+    }
+
+    sets.WS['Cloudsplitter'] = {
+        ammo = 'Knobkierrie',
+        head = gear.Odyssean.Head.MAB_WSD,
+        body = gear.Valorous.Body.MAB_WSD,
+        hands = gear.Odyssean.Hands.MAB_WSD,
+        legs = 'Augury Cuisses +1',
+        feet = gear.Odyssean.Feet.MAB_WSD,
+        neck = 'Baetyl Pendant',
+        waist = 'Orpheus\'s Sash',
+        ear1 = 'Moonshade Earring',
+        ear2 = 'Thrud Earring',
+        ring1 = 'Epaminondas\'s Ring',
+        ring2 = 'Metamorph Ring +1',
+        back = gear.Cichol.STR_WSD,
+        swaps = {
+            {
+                test = function()
+                    return settings.engaged.value == 'Hybrid'
+                end,
+                body = 'Sacro Brestplate'
+            },
+            {test = pred_factory.hachirin_bonus(2), waist = 'Hachirin-no-Obi'},
+            {test = pred_factory.etp_gt(2750, 1), ear1 = 'Friomisi Earring'}
+        }
+    }
+
+    sets.WS.Calamity = {
+        ammo = 'Knobkierrie',
+        head = 'Agoge Mask +3',
+        body = 'Pummeler\'s Lorica +3',
+        hands = gear.Odyssean.Hands.STR_WSD,
+        legs = gear.Valorous.Legs.STR_WSD,
+        feet = 'Sulevia\'s Leggings +2',
+        neck = 'War. Beads +2',
+        waist = 'Fotia Belt',
+        ear1 = 'Moonshade Earring',
+        ear2 = 'Thrud Earring',
+        ring1 = 'Niqmaddu Ring',
+        ring2 = 'Regal Ring',
+        back = gear.Cichol.STR_WSD,
+        swaps = {
+            {
+                test = pred_factory.buff_active('Mighty Strikes'),
+                ammo = 'Yetshila +1',
+                legs = gear.Valorous.Legs.STR_Crit,
+                feet = 'Boii Calligae +1'
+            }, {test = pred_factory.etp_gt(2750, 2), ear1 = 'Lugra Earring +1'}
+        }
+    }
+    sets.WS['Mistral Axe'] = sets.WS.Calamity
+
+    sets.WS.Rampage = {
+        ammo = 'Yetshila +1',
+        head = 'Flamma Zucchetto +2',
+        body = 'Hjarrandi Breastplate',
+        hands = 'Flamma Manopolas +2',
+        legs = 'Agoge Cuisses +3',
+        feet = 'Boill Calligae +1',
+        neck = 'Fotia Gorget',
+        waist = 'Fotia Belt',
+        ear1 = 'Brutal Earring',
+        ear2 = 'Moonshade Earring',
+        ring1 = 'Niqmaddu Ring',
+        ring2 = 'Regal Ring',
+        back = gear.Cichol.STR_DA,
+        swaps = {
+            {test = pred_factory.etp_gt(2750, 1), ear2 = 'Lugra Earring +1'}, {
+                test = pred_factory.buff_active('Mighty Strikes'),
+                ammo = 'Yetshila +1',
+                body = gear.Valorous.Body.STR_Crit,
+                hands = gear.Valorous.Hands.STR_Crit,
+                legs = gear.Valorous.Legs.STR_Crit
+            }
+        }
+    }
+
+    sets.WS['Impulse Drive'] = {
+        ammo = 'Knobkierrie',
+        head = 'Agoge Mask +3',
+        body = 'Pummeler\'s Lorica +3',
+        hands = gear.Odyssean.Hands.STR_WSD,
+        legs = gear.Valorous.Legs.STR_WSD,
+        feet = 'Sulevia\'s Leggings +2',
+        neck = 'War. Beads +2',
+        waist = 'Sailfi Belt +1',
+        ear1 = 'Thrud Earring',
+        ear2 = 'Moonshade Earring',
+        ring1 = 'Niqmaddu Ring',
+        ring2 = 'Regal Ring',
+        back = gear.Cichol.STR_WSD,
+        swaps = {
+            {
+                test = pred_factory.crit_bonus_gt(50), -- ! Probably not the optimal number, needs testing
+                ammo = 'Yetshila +1',
+                legs = gear.Valorous.Legs.STR_Crit,
+                feet = 'Boii Calligae +1'
+            }, {test = pred_factory.etp_gt(2750), ear2 = 'Lugra Earring +1'}
+        }
+    }
+
+    sets.WS.Stardiver = { --                                DA
+        ammo = 'Aurgelmir Orb +1',
+        head = gear.Lustratio.Head.PathA, -- 3 DA           36
+        body = gear.Argosy.Body.PathD, -- 6 DA                 42
+        hands = gear.Argosy.Hands.PathD, -- 5 DA               47
+        legs = gear.Argosy.Legs.PathD, -- 6 DA                53
+        feet = gear.Lustratio.Feet.PathD,
+        neck = 'Fotia Gorget',
+        waist = 'Fotia Belt',
+        ear1 = 'Brutal Earring', -- 5 DA                    58
+        ear2 = 'Moonshade Earring',
+        ring1 = 'Regal Ring',
+        ring2 = 'Niqmaddu Ring',
+        back = gear.Cichol.STR_DA, -- 10 DA                 68
+        swaps = {
+            {
+                test = function()
+                    return settings.engaged.value == 'Hybrid'
+                end,
+                head = 'Flamma Zucchetto +2',
+                body = 'Dagon Breastplate',
+                hands = 'Sulevia\'s Gauntlets +2',
+                legs = 'Pummeler\'s Cuisses +3',
+                feet = 'Flamma Gambieras +2'
+            }, {test = pred_factory.etp_gt(2750), ear2 = 'Lugra Earring +1'}, {
+                test = pred_factory.buff_active('Mighty Strikes'),
+                ammo = 'Yetshila +1',
+                head = 'Flamma Zucchetto +2',
+                body = gear.Valorous.Body.STR_Crit,
+                hands = gear.Valorous.Hands.STR_Crit,
+                legs = gear.Valorous.Legs.STR_Crit,
+                feet = 'Boii Calligae +1'
+            }
+        }
+    }
+
+    local function ukko_crit_rate_gt(n)
+        return function()
+            local b_crit = 25
+            if player.tp < 2000 then
+                b_crit = b_crit + (player.tp - 1000) * .015
+            else
+                b_crit = b_crit + 15 + (player.tp - 2000) * .02
+            end
+            return pred_factory.crit_bonus_gt(n - b_crit)()
+        end
+    end
+    sets.WS['Ukko\'s Fury'] = { --                          DA  TA  CR  CD
+        ammo = 'Yetshila +1', -- 2 CR, 6 CD                 33  0   22  6
+        head = 'Flamma Zucchetto +2', -- 5 TA 7 STP             5
+        body = 'Hjarrandi Breastplate', -- 13 CR, 10 STP            35
+        hands = 'Sulevia\'s Gauntlets +2', -- 6 DA          39
+        legs = 'Pummeler\'s Cuisses +3', -- 11 DA           50
+        feet = 'Boii Calligae +1', -- 11 CD                             17
+        neck = 'War. Beads +2', -- 7 DA               55
+        waist = 'Sailfi Belt +1', -- 5 DA                   62
+        ear1 = 'Brutal Earring', -- 5 DA                    67
+        ear2 = 'Moonshade Earring', -- 3.75-5 CR 
+        ring1 = 'Niqmaddu Ring',
+        ring2 = 'Regal Ring',
+        back = gear.Cichol.STR_DA, -- 10 DA                 77      
+        swaps = {
+            {test = ukko_crit_rate_gt(78), body = 'Dagon Breastplate'},
+            {test = pred_factory.etp_gt(2750), ear2 = 'Thrud Earring'},
+            {test = fighters_roll_effect(25), ear1 = 'Cessance Earring'},
+            {test = fighters_roll_effect(28), ear1 = 'Lugra Earring +1'},
+            {
+                test = fighters_roll_effect(32),
+                hands = gear.Valorous.Hands.STR_Crit
+            }
+        }
+    }
+
+    sets.WS.Cataclysm = {
+        ammo = 'Knobkierrie',
+        head = gear.Odyssean.Head.MAB_WSD,
+        body = 'Sacro Breastplate',
+        hands = gear.Odyssean.Hands.STR_WSD,
+        legs = 'Augury Cuisses +1',
+        feet = 'Sulevia\'s Leggings +2',
+        neck = 'Baetyl Pendant',
+        waist = 'Orpheus\'s Sash',
+        ear1 = 'Moonshade Earring',
+        ear2 = 'Thrud Earring',
+        ring1 = 'Epaminondas\'s Ring',
+        ring2 = 'Metamorph Ring +1',
+        back = gear.Cichol.STR_WSD,
+        swaps = {
+            {
+                test = function()
+                    return settings.engaged.value == 'Hybrid'
+                end,
+                body = 'Sacro Brestplate'
+            },
+            {test = pred_factory.hachirin_bonus(2), waist = 'Hachirin-no-Obi'},
+            {test = pred_factory.etp_gt(2750, 1), ear1 = 'Friomisi Earring'}
+        }
+    }
+
+
+    local function raging_crit_rate_gt(n)
+        return function()
+            local b_crit = 20
+            if player.tp < 2000 then
+                b_crit = b_crit + (player.tp - 1000) * .015
+            else
+                b_crit = b_crit + 15 + (player.tp - 2000) * .02
+            end
+            return pred_factory.crit_bonus_gt(n - b_crit)()
+        end
+    end
+    sets.WS['Raging Rush'] = set_combine(sets.WS['Ukko\'s Fury'], {
+        swaps = {
+            {test = raging_crit_rate_gt(78), body = 'Dagon Breastplate'},
+            {test = pred_factory.etp_gt(2750), ear2 = 'Thrud Earring'}, {
+                test = pred_factory.p_and(pred_factory.etp_gt(2750),
+                                          pred_factory.time_between(18, 6)),
+                ear2 = 'Lugra Earring +1'
+            }, {test = fighters_roll_effect(25), ear1 = 'Cessance Earring'},
+            {test = fighters_roll_effect(28), ear1 = 'Lugra Earring +1'}, {
+                test = pred_factory.p_and(fighters_roll_effect(28),
+                                          pred_factory.time_between(18, 6),
+                                          pred_factory.etp_gt(2750)),
+                ear1 = 'Thrud Earring'
+            },
+            {
+                test = fighters_roll_effect(32),
+                hands = gear.Valorous.Hands.STR_Crit
+            }
+        }
+    })
+
+    sets.WS.Upheaval = {
+        ammo = 'Knobkierrie',
+        head = 'Agoge Mask +3',
+        body = 'Pummeler\'s Lorica +3',
+        hands = gear.Odyssean.Hands.VIT_WSD,
+        legs = gear.Odyssean.Legs.VIT_WSD,
+        feet = 'Sulevia\'s Leggins +2',
+        neck = 'War. Beads +2',
+        waist = 'Sailfi Belt +1',
+        ear1 = 'Moonshade Earring',
+        ear2 = 'Thrud Earring',
+        ring1 = 'Niqmaddu Ring',
+        ring2 = 'Gelatinous Ring +1',
+        back = gear.Cichol.VIT_WSD,
+        swaps = {
+            {test = pred_factory.etp_gt(2750), ear1 = 'Lugra Earring +1'}
+            -- TODO: Mighty strikes
+        }
+    }
+
+    sets.WS.Resolution = { --                    DA
+        ammo = 'Aurgelmir Orb +1',
+        head = 'Flamma Zucchetto +2',
+        body = 'Dagon Breastplate',
+        hands = gear.Argosy.Hands.PathD, -- 5 DA    38
+        legs = gear.Argosy.Legs.PathD, -- 6 DA      42
+        feet = 'Flamma Gambieras +2', -- 6 DA       48
+        neck = 'Fotia Gorget',
+        waist = 'Fotia Belt',
+        ear1 = 'Brutal Earring', -- 5 DA            53
+        ear2 = 'Cessance Earring', -- 3 DA          56
+        ring1 = 'Niqmaddu Ring',
+        ring2 = 'Regal Ring',
+        back = gear.Cichol.STR_DA, -- 10 DA         66
+        swaps = {
+            {
+                test = function()
+                    return settings.engaged.value == 'Hybrid'
+                end,
+                hands = 'Sulevia\'s Gauntlets +2',
+                legs = 'Pummeler\'s Cuisses +3'
+            }, {
+                test = pred_factory.buff_active('Mighty Strikes'),
+                ammo = 'Yetshila +1',
+                body = gear.Valorous.Body.STR_Crit,
+                hands = gear.Valorous.Hands.STR_Crit,
+                legs = gear.Valorous.Legs.STR_Crit,
+                feet = 'Boii Calligae +1'
+            }
+        }
+    }
+end)
+
+do
+    local get_icon
+    do
+        local path = windower.windower_path .. '/addons/equipviewer/icons/32/'
+        get_icon = function(name)
+            local item_id = res.items:with('en', name).id
+            return path .. tostring(item_id) .. '.png'
+        end
+    end
+
+    -- Map over only array-like portion of table
+    local imap = function(t, fn)
+        local res = {}
+        for i, v in ipairs(t) do res[i] = fn(v) end
+
+        return setmetatable(res, getmetatable(t))
+    end
+
+    local function get_icons(mode)
+        print(mode.description)
+        return imap(mode, function(el)
+            local item_name = type(el) == 'table' and el.name or el
+            local value = type(el) == 'table' and el.alias or item_name
+            local img
+            if windower.file_exists(windower.addon_path .. '/data/graphics/' ..
+                                        item_name .. '.png') then
+                img = windower.addon_path .. '/data/graphics/' .. item_name ..
+                          '.png'
+            elseif windower.file_exists(windower.addon_path ..
+                                            '/data/graphics/WAR/' .. item_name ..
+                                            '.png') then
+                img =
+                    windower.addon_path .. '/data/graphics/WAR/' .. item_name ..
+                        '.png'
+            else
+                img = get_icon(item_name)
+            end
+            return {img = img, value = tostring(value)}
+        end)
+    end
+
+    local function grid_icons(icons)
+        local res = T {T {}, T {}}
+        for i, v in ipairs(icons) do res[i % 2 == 1 and 1 or 2]:append(v) end
+        return res
+    end
+    local GUI_x = 1732
+    local GUI_y = 80
+    IconButton({
+        x = GUI_x,
+        y = GUI_y,
+        var = settings.engaged,
+        icons = {
+            {img = 'DD Normal.png', value = 'Normal'},
+            {img = 'DD Hybrid.png', value = 'Hybrid'}
+        }
+    }):draw()
+
+    GUI_y = GUI_y + 54
+
+    GridButton({
+        x = GUI_x,
+        y = GUI_y,
+        var = settings.main,
+        icons = grid_icons(get_icons(main_hands))
+    }):draw()
+
+    GUI_y = GUI_y + 54
+
+    local sub_button = IconButton({
+        x = GUI_x,
+        y = GUI_y,
+        var = settings.sub,
+        icons = get_icons(settings.sub)
+    })
+    sub_button:draw()
+
+    settings.sub.on_option_change:register(
+        function() sub_button:new_icons(get_icons(settings.sub)) end)
+
+    GUI_y = GUI_y + 54
+
+    local abyssea_main
+    ToggleButton({
+        x = GUI_x,
+        y = GUI_y,
+        var = settings.abyssea,
+        iconUp = 'WAR/Atomos.png',
+        iconDown = 'WAR/Atomos.png'
+    }):draw()
+    settings.abyssea.on_change:register(function()
+        if settings.abyssea.value then
+            abyssea_main:enable()
+            abyssea_main:show()
         else
-            equip(sets.midcast)
+            abyssea_main:disable()
+            abyssea_main:hide()
         end
-    end
-end
+    end)
 
-function aftercast(spell, action) update_gear() end
+    GUI_y = GUI_y + 54
 
-function status_change(new, action) update_gear() end
+    abyssea_main = IconButton({
+        x = GUI_x,
+        y = GUI_y,
+        var = abyssea_main_hands,
+        icons = get_icons(abyssea_main_hands)
+    })
+    abyssea_main:draw()
+    abyssea_main:hide()
 
-function buff_change(buff, gain)
-    if buff == 'Haste' and not gain then Haste_Level = 0 end
-    local dw_level = get_dw_level()
-    if dw_level ~= DWLevel.value then
-        DWLevel:set(tostring(dw_level))
-        update_gear()
-    end
-end
+    GUI_y = GUI_y + 54
 
-function get_dw_level()
-    local dw_needed = get_dw_needed()
-    local dw_level = math.max(unpack(DWLevel))
-    for i, dw in ipairs(DWLevel) do -- find the lowest dw that is >= dw_needed
-        if tonumber(dw) < dw_level and tonumber(dw) >= dw_needed then
-            dw_level = tonumber(dw)
-        end
-    end
-    return dw_level
+    local dw_mode_display = TextCycle({
+        x = GUI_x,
+        y = GUI_y,
+        var = settings.dual_wield_mode,
+        align = 'left',
+        width = 112,
+        start_hidden = true,
+        disabled = true
+    })
+    dw_mode_display:draw()
+
+    GUI_y = GUI_y + 32
+
+    local dw_level_display = TextCycle({
+        x = GUI_x,
+        y = GUI_y,
+        var = settings.dual_wield_level,
+        align = 'left',
+        width = 112,
+        start_hidden = true,
+        disabled = true
+    })
+    dw_level_display:draw()
+    settings.sub.on_option_change:register(
+        function(m)
+            local player = windower.ffxi.get_player()
+            if player.sub_job == 'NIN' or player.sub_job == 'DNC' then
+                if item_type(settings.main.value) == '1h' then
+                    dw_mode_display:enable()
+                    dw_mode_display:show()
+                    dw_level_display:enable()
+                    dw_level_display:show()
+                else
+                    dw_mode_display:disable()
+                    dw_mode_display:hide()
+                    dw_level_display:disable()
+                    dw_level_display:hide()
+                end
+            end
+        end)
 end
 
