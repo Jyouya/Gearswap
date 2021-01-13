@@ -32,7 +32,7 @@ local item_id_memo = setmetatable({}, {
 do
     settings.sub = M {['description'] = 'Off Hand', 'Genmei Shield'}
     local subs = T {
-        'Ukaldi', 'Sindri', 'Izcalli', 'Daybreak', 'Kraken Club',
+        'Magesmasher +1', 'Ukaldi', 'Sindri', 'Izcalli', 'Daybreak', 'Kraken Club',
         'Genmei Shield', 'Ammurapi Shield', 'Bloodrain Strap'
     }
     local function pack_sub()
@@ -220,18 +220,18 @@ end
 
 -- Enfeebling rules
 rules.midcast:append({
-    test = function(spell)
+    test = function(equipset, spell)
         return spell.skill == 'Enfeebling Magic' and spell.type == 'WhiteMagic'
     end,
     key = 'MndEnfeebles'
 })
 
-rules.midcast:append({
-    test = function(spell)
-        return spell.skill == 'Enfeebling Magic' and spell.type ~= 'WhiteMagic'
-    end,
-    key = 'IntEnfeebles'
-})
+-- rules.midcast:append({
+--     test = function(equipset, spell)
+--         return spell.skill == 'Enfeebling Magic' and spell.type ~= 'WhiteMagic'
+--     end,
+--     key = 'IntEnfeebles'
+-- })
 
 local function dw_sub_job()
     return player.sub_job == 'NIN' or player.sub_job == 'DNC'
@@ -388,7 +388,7 @@ events.load:register(function()
         sub = 'Genmei Shield',
         ammo = 'Hydrocera',
         head = gear.Kaykaus.Head.PathC,
-        body = 'Ebers Bliaud +1', -- Kaykaus Bliaut +1 Path C
+        body = gear.Kaykaus.Body.PathC,
         hands = 'Theophany Mitts +3',
         legs = 'Ebers Pantaloons +1',
         feet = gear.Kaykaus.Feet.PathC,
@@ -692,24 +692,24 @@ events.load:register(function()
         swaps = {{test = dw_sub_job, sub = 'C. Palug Hammer'}}
     }
 
-    sets.midcast.MndEnfeebles = set_combine(sets.midcast['Enfeebling Magic'], {
+    sets.midcast['Enfeebling Magic'].MndEnfeebles = set_combine(sets.midcast['Enfeebling Magic'], {
         waist = 'Luminary Sash',
         back = gear.Alaunus.MND_Enfeeble,
         swaps = {{test = dw_sub_job, sub = 'Daybreak'}}
     })
 
-    sets.midcast.Paralyze = set_combine(sets.midcast.MndEnfeebles, {
-        main = 'Daybreak'
-        -- swaps = {{test = dw_sub_job, sub = 'C. Palug Hammer'}}
+    sets.midcast.Paralyze = set_combine(sets.midcast['Enfeebling Magic'].MndEnfeebles, {
+        main = 'Daybreak',
+        swaps = {{test = dw_sub_job, sub = 'C. Palug Hammer'}}
     })
 
-    sets.midcast.Slow = set_combine(sets.midcast.MndEnfeebles, {
-        main = 'Daybreak'
-        -- swaps = {{test = dw_sub_job, sub = 'C. Palug Hammer'}}
+    sets.midcast.Slow = set_combine(sets.midcast['Enfeebling Magic'].MndEnfeebles, {
+        main = 'Daybreak',
+        swaps = {{test = dw_sub_job, sub = 'C. Palug Hammer'}}
     })
 
-    sets.midcast.Repose = table.copy(sets.midcast.MndEnfeebles)
-    sets.midcast.Stun = table.copy(sets.midcast.MndEnfeebles)
+    sets.midcast.Repose = table.copy(sets.midcast['Enfeebling Magic'].MndEnfeebles)
+    sets.midcast.Stun = table.copy(sets.midcast['Enfeebling Magic'].MndEnfeebles)
 
     sets.midcast.Dispelga = set_combine(sets.midcast['Enfeebling Magic'], {
         main = 'Daybreak',
@@ -751,8 +751,8 @@ events.load:register(function()
         ammo = 'Amar Cluster',
         head = 'Ayanmo Zucchetto +2',
         body = 'Ayanmo Corazza +2',
-        hands = 'Ayanmo Manopolas +2',
-        legs = 'Ayanmo Cosciales +2',
+        hands = 'Gazu Bracelet +1',
+        legs = gear.Telchine.Legs.STP_WSD, -- ? Re-enchant to STP_DEX
         feet = 'Ayanmo Gambieras +2',
         neck = 'Combatant\'s Torque',
         waist = 'Windbuffet Belt +1',
@@ -809,7 +809,7 @@ events.load:register(function()
         left_ear = 'Moonshade Earring',
         right_ear = 'Ishvara Earring',
         left_ring = 'Iliabrat Ring',
-        right_ring = 'Petrov Ring', -- Empanada Ring
+        right_ring = 'Epaminondas\'s Ring',
         back = gear.Alaunus.STR_WSD,
         swaps = {{test = pred_factory.etp_gt(2750), left_ear = 'Regal Earring'}}
     }
@@ -845,7 +845,7 @@ events.load:register(function()
         feet = 'Piety Duckbills +3',
         neck = 'Cleric\'s Torque +2',
         waist = 'Luminary Sash',
-        ring1 = 'Rufescent Ring', -- 'Epaminonda\'s Ring',
+        ring1 = 'Epaminondas\'s Ring',
         ring2 = 'Metamorph Ring +1',
         left_ear = 'Moonshade Earring',
         right_ear = 'Regal Earring',
@@ -869,7 +869,7 @@ events.load:register(function()
         waist = 'Prosilio Belt +1',
         left_ear = 'Moonshade Earring',
         right_ear = 'Regal Earring',
-        left_ring = 'Rufescent Ring', -- Epaminonda\'s Ring
+        left_ring = 'Epaminondas\'s Ring',
         right_ring = 'Metamorph Ring +1',
         back = gear.Alaunus.STR_WSD,
         swaps = {
@@ -883,7 +883,7 @@ events.load:register(function()
     -- Quick math suggests we want between 16 and 40% DA
     sets.WS['Hexa Strike'] = {
         ammo = 'Yetshila +1',
-        head = 'Piety Cap +3',
+        head = 'Blistering Sallet +1',
         body = 'Ayanmo Corazza +2',
         hands = 'Piety Mitts +3',
         legs = 'Piety Pantaloons +3',
@@ -957,9 +957,9 @@ events.load:register(function()
 
     sets.WS['Seraph Strike'] = set_combine(sets.WS['Flash Nova'], {})
 
-    sets.Randgrith = {
+    sets.WS.Randgrith = {
         ammo = 'Amar Cluster',
-        head = 'Piety Cap +3',
+        head = gear.Chironic.Head.WSD,
         body = 'Piety Briault +3',
         hands = 'Piety Mitts +3',
         legs = gear.Chironic.Legs.WSD,
@@ -968,12 +968,12 @@ events.load:register(function()
         waist = 'Prosilio Belt +1',
         left_ear = 'Regal Earring',
         right_ear = 'Ishvara Earring',
-        left_ring = 'Rufescent Ring', -- Empanada Ring,
+        left_ring = 'Epaminondas\'s Ring',
         right_ring = 'Metamorph Ring +1',
         back = gear.Alaunus.STR_WSD
     }
 
-    sets.Randgrith.Mid = set_combine(sets.WS.Randgrith,
+    sets.WS.Randgrith.Mid = set_combine(sets.WS.Randgrith,
                                      {legs = 'Piety Pantaloons +3'})
 
     sets.WS.Brainshaker = {
@@ -1020,7 +1020,7 @@ events.load:register(function()
         waist = 'Luminary Sash',
         left_ear = 'Moonshade Earring',
         right_ear = 'Regal Earring',
-        left_ring = 'Rufescent Ring', -- Empanada
+        left_ring = 'Epaminondas\'s Ring',
         right_ring = 'Metamorph Ring +1',
         back = gear.Alaunus.MND_WSD,
         swaps = {

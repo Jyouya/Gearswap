@@ -50,7 +50,8 @@ local function M(t, ...)
                     m[ind] = setmetatable(val, {
                         __tostring = function(t)
                             return t.alias
-                        end
+                        end,
+                        __index = function(t, i) return rawget(t, i) end
                     })
                 else
                     m[ind] = val

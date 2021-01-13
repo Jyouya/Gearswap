@@ -19,6 +19,10 @@ function command:register(command, cb, arg_string)
     -- for k, v in pairs(_commands) do print(k, v) end
 end
 
+function command:unregister(command)
+    self[command:lower()] = nil
+end
+
 function self_command(command)
     -- for k, v in pairs(_commands) do print(k, v) end
     local cmd = command:split(' ', 2):map(string.lower)

@@ -379,6 +379,7 @@ local function precast(spell, action)
 
     equip(final_set)
 
+    clear_timeout()
     _, clear_timeout = set_timeout(on_timeout, spell.cast_time or 2)
 end
 
@@ -504,7 +505,7 @@ get_midcast = function(spell)
         end
     end
 
-    -- print(breadcrumbs:concat('.'))
+    print(breadcrumbs:concat('.'))
 
     -- If a set is empty, go back up the tree till a set has gear
     if empty_set(equip_set) then -- if it contains no gear

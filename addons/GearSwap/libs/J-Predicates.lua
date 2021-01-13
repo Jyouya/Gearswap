@@ -204,16 +204,16 @@ end
 
 function predicate_factory.p_and(...)
     local args = {...}
-    return function()
-        for _, fn in ipairs(args) do if not fn() then return false end end
+    return function(...)
+        for _, fn in ipairs(args) do if not fn(...) then return false end end
         return true
     end
 end
 
 function predicate_factory.p_or(...)
     local args = {...}
-    return function()
-        for _, fn in ipairs(args) do if fn() then return true end end
+    return function(...)
+        for _, fn in ipairs(args) do if fn(...) then return true end end
         return false
     end
 end
@@ -328,6 +328,13 @@ do
 
             return etp > tp
         end
+    end
+end
+
+function predicate_factory.etp_lte(tp, gear_fencer) 
+    local etp_gt = predicate_factory.etp_gt(tp, gear_fencer)
+    return function(spell)
+        return not etp_gt(spell)
     end
 end
 

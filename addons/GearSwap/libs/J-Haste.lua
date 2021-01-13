@@ -57,8 +57,6 @@ local function get_MA_haste()
         ma_haste = ma_haste + march_haste[marches[i]]
     end
 
-    if buffactive.embrava then ma_haste = ma_haste + 266 end
-
     if buffactive[604] then -- Mighty Guard
         ma_haste = ma_haste + 150
     end
@@ -87,11 +85,13 @@ end
 local function get_total_haste()
     local ja_haste = get_JA_haste()
     local ma_haste = get_MA_haste()
+    local embrava_haste = buffactive.embrava and 266 or 0
 
     ja_haste = ja_haste <= 256 and ja_haste or 256
     ma_haste = ma_haste <= 448 and ma_haste or 448
 
-    local total = gear_haste + ja_haste + ma_haste
+
+    local total = gear_haste + ja_haste + ma_haste + embrava_haste
     return total <= 819 and total or 819
 end
 

@@ -132,32 +132,36 @@ Herc.Legs.TreasureHunter = {
     name = "Herculean Trousers",
     augments = {'Accuracy+12', '"Treasure Hunter"+2', 'Accuracy+3 Attack+3'}
 }
-Herc.Legs.Savage = {
+Herc.Legs.Phalanx = {
     name = "Herculean Trousers",
     augments = {'Weapon skill damage +5%', 'Phalanx +5', 'Accuracy+9 Attack+9'}
+}
+Herc.Legs.Savage = {
+    name = "Herculean Trousers",
+    augments = {
+        '"Store TP"+4', 'Attack+4', 'Weapon skill damage +7%',
+        'Accuracy+19 Attack+19', 'Mag. Acc.+3 "Mag.Atk.Bns."+3'
+    }
 }
 Herc.Hands = {}
 Herc.Hands.Leaden = {
     name = "Herculean Gloves",
     augments = {
-        'Mag. Acc.+19 "Mag.Atk.Bns."+19', 'Weapon skill damage +1%',
-        'Mag. Acc.+13', '"Mag.Atk.Bns."+14'
+        '"Mag.Atk.Bns."+29', 'Accuracy+2 Attack+2',
+        'Mag. Acc.+20 "Mag.Atk.Bns."+20'
     }
 }
 Herc.Head = {}
 Herc.Head.Savage = {
     name = "Herculean Helm",
     augments = {
-        'Rng.Acc.+12', 'Weapon skill damage +3%', 'STR+6', 'Accuracy+15',
-        'Attack+13'
+        'Accuracy+8', 'Weapon skill damage +5%', 'Accuracy+5 Attack+5',
+        'Mag. Acc.+15 "Mag.Atk.Bns."+15'
     }
 }
 Herc.Head.Wildfire = {
     name = "Herculean Helm",
-    augments = {
-        'Mag. Acc.+16 "Mag.Atk.Bns."+16', 'Crit.hit rate+1', 'Mag. Acc.+15',
-        '"Mag.Atk.Bns."+15'
-    }
+    augments = {'"Mag.Atk.Bns."+30', 'CHR+1', 'Mag. Acc.+18 "Mag.Atk.Bns."+18'}
 }
 
 local Adhemar = {}
@@ -363,6 +367,7 @@ rules.midcast:append({
 -- Apply TH gear over midshot + swaps
 -- ! Known issue with TH layering over swaps
 -- ! Triple shot + TH results in only TH being applied
+-- ? I thought I fixed this, let me know if it still happens I guess
 rules.midcast:append({
     test = function(equip_set, spell)
         if spell.prefix == '/range' and TH.Result then
@@ -471,7 +476,7 @@ events.load:register(function()
         legs = "Malignance Tights",
         feet = "Malignance Boots",
         neck = "Loricate Torque +1",
-        ear1 = "Odnowa Earring",
+        ear1 = "Odnowa Earring +1",
         ear2 = "Etiolation Earring",
         ring1 = "Defending Ring",
         ring2 = "Gelatinous Ring +1",
@@ -589,7 +594,7 @@ events.load:register(function()
         feet = Carmine.Feet.PathD,
         neck = "Baetyl Pendant",
         ear1 = "Loquac. Earring",
-        ear2 = "Odnowa Earring",
+        ear2 = "Odnowa Earring +1",
         ring1 = "Rahab Ring",
         ring2 = "Kishar Ring",
         back = Camulus.Fastcast
@@ -785,7 +790,7 @@ events.load:register(function()
         ammo = "Living Bullet",
         head = Herc.Head.Wildfire,
         body = "Lanun Frac +3",
-        hands = "Carmine Fin. Ga. +1",
+        hands = Herc.Hands.Leaden,
         legs = Herc.Legs.Leaden,
         feet = "Lanun Bottes +3",
         neck = "Comm. Charm +2",

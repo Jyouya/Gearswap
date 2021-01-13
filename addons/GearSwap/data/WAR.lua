@@ -21,14 +21,15 @@ local main_hands = M {
     'Montante +1',
     'Raetic Algol +1',
     'Shining One',
-    'Kaja Staff',
+    'Xoanon',
     'Drepanum',
     'Karambit',
     'Naegling',
     'Tanmogayi +1',
     'Dolichenus',
     'Farsha',
-    'Beryllium Mace +1'
+    'Beryllium Mace +1',
+    gear.Malevolence1
 }
 
 local abyssea_main_hands = M {
@@ -41,7 +42,8 @@ local abyssea_main_hands = M {
     'Soulflayer\'s Wand',
     'Lamia Staff',
     'Debahocho',
-    'Mutsunokami'
+    'Mutsunokami',
+    'Quint Spear'
 }
 
 local item_id_memo = setmetatable({}, {
@@ -50,6 +52,7 @@ local item_id_memo = setmetatable({}, {
         return t[k]
     end
 })
+
 local function item_type(item)
     local item_table = res.items[item_id_memo[type(item) == 'table' and
                            item.name or item]]
@@ -68,7 +71,7 @@ end
 do
     settings.sub = M {['description'] = 'Off Hand', 'Utu Grip'}
     local subs = T {
-        'Zantetsuken', 'Reikiko', 'Barbarity +1', 'Blurred Shield +1'
+        'Zantetsuken', 'Reikiko', 'Barbarity +1', 'Farsha', 'Fernagu', gear.Malevolence2, 'Blurred Shield +1'
     }
     local subs_1h = T {}
     local subs_1h_current = subs_1h[1]
@@ -313,11 +316,11 @@ events.load:register(function()
         feet = 'Pummeler\'s Calligae +3',
         neck = 'Loricate Torque +1', -- 6 DT            30  19
         waist = 'Asklepian Belt',
-        ear1 = 'Odnowa Earring +1', -- 2 MDT                21
-        ear2 = 'Genmei Earring', -- 2 PDT               32
-        ring1 = gear.MoonlightRing1, -- 5 DT            37  26
-        ring2 = 'Gelatinous Ring +1', -- 7 PDT, -1 MDT  44  25
-        back = 'Moonlight Cape' -- 6 DT                 50  31
+        ear1 = 'Odnowa Earring +1', -- 3 PDT, 5 MDT     33  24
+        ear2 = 'Tuisto Earring',               
+        ring1 = gear.MoonlightRing1, -- 5 DT            38  29
+        ring2 = 'Gelatinous Ring +1', -- 7 PDT, -1 MDT  45  28
+        back = 'Moonlight Cape' -- 6 DT                 51  34
     }
 
     sets.midcast = { --                                     DT  SIRD
@@ -330,7 +333,7 @@ events.load:register(function()
         neck = 'Moonlight Necklace', -- 15 SIRD                 104
         waist = 'Flume Belt +1', -- 4 PDT                   30
         ear1 = 'Odnowa Earring +1',
-        ear2 = 'Genmei Earring', -- 2 PDT                   32
+        ear2 = 'Tuisto Earring', -- 2 PDT                   32
         ring1 = gear.MoonlightRing1, -- 5 DT                37
         ring2 = 'Gelatinous Ring +1', -- 7 PDT              44
         back = 'Moonlight Cape', -- 6 DT                    50
@@ -489,7 +492,7 @@ events.load:register(function()
         legs = 'Pummeler\'s Cuisses +3', -- 11 DA, 5 PDT    56      32
         feet = 'Pummeler\'s Calligae +3', -- 9 DA, 4 STP    65  36  
         neck = 'War. Beads +2', -- 7 DA               72
-        waist = 'Tempus Fugit',
+        waist = 'Tempus Fugit +1',
         ear1 = 'Cessance Earring', -- 3 DA, 3 STP           75  39
         ear2 = 'Telos Earring', -- 5 STP, 1 DA              76  40
         ring1 = gear.MoonlightRing1, -- 5 STP, 5 DT             45  37  32
@@ -515,7 +518,7 @@ events.load:register(function()
         legs = 'Pummeler\'s Cuisses +3', -- 11 DA, 5 DT     50      30
         feet = 'Pummeler\'s Calligae +3', -- 9 DA, 4 STP    59  28
         neck = 'War. Beads +2', -- 7 DA               66
-        waist = 'Tempus Fugit',
+        waist = 'Tempus Fugit +1',
         ear1 = 'Brutal Earring', -- 5 DA, 1 STP             71  29
         ear2 = 'Suppanomimi',
         ring1 = gear.MoonlightRing1, -- 5 STP, 5 DT             34  35
@@ -545,7 +548,7 @@ events.load:register(function()
         legs = 'Pummeler\'s Cuisses +3', -- 11 DA, 5 PDT    56      32
         feet = 'Pummeler\'s Calligae +3', -- 9 DA, 4 STP    65  36  
         neck = 'War. Beads +2', -- 7 DA               72
-        waist = 'Tempus Fugit', --                       
+        waist = 'Tempus Fugit +1', --                       
         ear1 = 'Brutal Earring', -- 5 DA, 1 STP             77  37
         ear2 = 'Cessance Earring', -- 3 DA, 3 STP           80  40
         ring1 = 'Niqmaddu Ring', -- 3 QA
@@ -648,7 +651,7 @@ events.load:register(function()
         legs = 'Pummeler\'s Cuisses +3', -- 11 DA       56
         feet = 'Pummeler\'s Calligae +3', -- 9 DA       65
         neck = 'War. Beads +2', -- 7 DA           72
-        waist = 'Tempus Fugit',
+        waist = 'Tempus Fugit +1',
         ear1 = 'Brutal Earring', -- 5 DA                77
         ear2 = 'Cessance Earring', -- 3 DA              80
         ring1 = gear.MoonlightRing1,
@@ -831,7 +834,7 @@ events.load:register(function()
     sets.WS['Cloudsplitter'] = {
         ammo = 'Knobkierrie',
         head = gear.Odyssean.Head.MAB_WSD,
-        body = gear.Valorous.Body.MAB_WSD,
+        body = 'Sacro Breastplate',
         hands = gear.Odyssean.Hands.MAB_WSD,
         legs = 'Augury Cuisses +1',
         feet = gear.Odyssean.Feet.MAB_WSD,
@@ -840,15 +843,15 @@ events.load:register(function()
         ear1 = 'Moonshade Earring',
         ear2 = 'Thrud Earring',
         ring1 = 'Epaminondas\'s Ring',
-        ring2 = 'Metamorph Ring +1',
+        ring2 = 'Regal Ring', -- 'Metamorph Ring +1',
         back = gear.Cichol.STR_WSD,
         swaps = {
-            {
-                test = function()
-                    return settings.engaged.value == 'Hybrid'
-                end,
-                body = 'Sacro Brestplate'
-            },
+            -- {
+            --     test = function()
+            --         return settings.engaged.value == 'Hybrid'
+            --     end,
+            --     body = 'Sacro Brestplate'
+            -- },
             {test = pred_factory.hachirin_bonus(2), waist = 'Hachirin-no-Obi'},
             {test = pred_factory.etp_gt(2750, 1), ear1 = 'Friomisi Earring'}
         }
@@ -1254,15 +1257,11 @@ do
             local player = windower.ffxi.get_player()
             if player.sub_job == 'NIN' or player.sub_job == 'DNC' then
                 if item_type(settings.main.value) == '1h' then
-                    dw_mode_display:enable()
-                    dw_mode_display:show()
-                    dw_level_display:enable()
-                    dw_level_display:show()
+                    dw_mode_display:enable():show()
+                    dw_level_display:enable():show()
                 else
-                    dw_mode_display:disable()
-                    dw_mode_display:hide()
-                    dw_level_display:disable()
-                    dw_level_display:hide()
+                    dw_mode_display:disable():hide()
+                    dw_level_display:disable():hide()
                 end
             end
         end)

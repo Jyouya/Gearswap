@@ -6,7 +6,7 @@ local function bind_key(key, command)
     if _binds[key] then error('Cannot attach multiple bindings to ' .. key) end
     if type(command) == 'string' then
         windower.send_command(('bind %s %s'):format(key, command))
-    elseif type(command) == 'Function' then
+    elseif type(command) == 'function' then
         windower.send_command(('bind %s gs _bind key'):format(key))
     end
     _binds[key] = command
