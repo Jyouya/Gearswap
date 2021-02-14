@@ -410,6 +410,12 @@ do
             return bonus > n
         end
     end
+    function predicate_factory.impetus_count_gte(n)
+        crit_action_handler = crit_action_handler or bind_action()
+        return function(spell) 
+            return impetus_count >= n
+        end
+    end
 end
 
 return predicate_factory

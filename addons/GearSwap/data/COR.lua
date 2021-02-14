@@ -470,6 +470,7 @@ end
 events.load:register(function()
     -- print('on load')
     sets.idle = {
+        ammo = empty,
         head = "Malignance Chapeau",
         body = "Malignance Tabard",
         hands = "Malignance Gloves",
@@ -625,7 +626,7 @@ events.load:register(function()
             neck = "Commodore Charm +2",
             body = "Laksamana's Frac +3",
             hands = "Carmine Fin. Ga. +1",
-            legs = "Laksamana's Trews +3",
+            legs = "Laksamana's Trews +3", -- 15
             feet = "Meg. Jam. +2",
             back = Camulus.Snapshot,
             waist = "Impulse Belt",
@@ -1015,6 +1016,7 @@ end
 
 do
     local GUI_x = 1732
+    -- local GUI_x = 500
     local GUI_y = 70
     GUI.bound.y.lower = 70
     GUI.bound.y.upper = 471

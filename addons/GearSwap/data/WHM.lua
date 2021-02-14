@@ -33,7 +33,7 @@ do
     settings.sub = M {['description'] = 'Off Hand', 'Genmei Shield'}
     local subs = T {
         'Magesmasher +1', 'Ukaldi', 'Sindri', 'Izcalli', 'Daybreak', 'Kraken Club',
-        'Genmei Shield', 'Ammurapi Shield', 'Bloodrain Strap'
+        'Genmei Shield', 'Ammurapi Shield', 'Bloodrain Strap', gear.Asclepius.PathC,
     }
     local function pack_sub()
         local player = windower.ffxi.get_player()
@@ -437,7 +437,8 @@ events.load:register(function()
                 hands = 'Ebers Mitts +1',
                 back = 'Mending Cape'
             }
-        }
+        },
+        swap_managed_weapon = function() return true end
     })
 
     sets.midcast.Cursna = {
@@ -506,7 +507,7 @@ events.load:register(function()
         left_ear = 'Andoaa Earring',
         right_ear = 'Malignance Earring',
         back = gear.Alaunus.Meva,
-        swap_managed_weapon = enhancing_weapon_swap_test
+        swap_managed_weapon = enhancing_weapon_swap_test -- Disabled for dyna
     }
 
     sets.midcast.BoostSpell = {
@@ -543,7 +544,7 @@ events.load:register(function()
                                not enhancing_weapon_swap_test() and
                                buffactive['Light Arts']
                 end,
-                waist = 'Fucho-no-Obi', -- Embala Sash
+                waist = 'Embla Sash',
                 legs = 'Piety Pantaloons +3'
             }
         }
@@ -570,7 +571,7 @@ events.load:register(function()
         left_ring = 'Sheltered Ring',
         right_ring = 'Stikini Ring +1',
         back = gear.Alaunus.Meva,
-        swap_managed_weapon = enhancing_weapon_swap_test
+        swap_managed_weapon = enhancing_weapon_swap_test 
     }
 
     sets.midcast.BarElement.Potency = set_combine(sets.midcast.BarElement, {
@@ -951,7 +952,7 @@ events.load:register(function()
         swaps = {
             {test = pred_factory.orpheus_ele, waist = 'Orpheus\'s Sash'},
             {test = pred_factory.elemental_obi, waist = 'Korin Obi'},
-            {test = pred_factory.etp_gt(2750), left_ear = 'Friomisi Earring'}
+            {test = pred_factory.etp_gt(2750), left_ear = 'Regal Earring'}
         }
     }
 

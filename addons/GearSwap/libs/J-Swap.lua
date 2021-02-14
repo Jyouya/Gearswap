@@ -25,8 +25,7 @@ rules = table.update({
 
 local function set_timeout(cb, delay)
     local run = true
-    local co =
-        coroutine.schedule(function() if run then cb() end end, delay)
+    local co = coroutine.schedule(function() if run then cb() end end, delay)
     return co, function() run = false end
 end
 
@@ -163,10 +162,13 @@ do
         [9] = 12.4,
         [10] = 14.5,
         [11] = 16.4,
-        [12] = 20.4
+        [12] = 20.4,
+        [13] = 24.9
     }
     pretarget = function(spell)
         if spell.prefix == '/item' then return end
+        if spell.prefix == '/magic' and spell.en:startswith('Indi-') and
+            buffactive['Entrust'] then spell.range = 13 end
         if spell.range and spell.target.distance and ranges[spell.range] +
             (spell.target.model_size or 0) < spell.target.distance then
             return cancel_spell()
@@ -375,6 +377,13 @@ local function precast(spell, action)
         elseif ammo then
             final_set = set_combine(final_set, {ammo = ammo})
         end
+    end
+
+    -- ! For bard songs, precast instrument MUST be the same as midcast
+    if spell.type == 'BardSong' then
+        local midcast_set = get_midcast(spell)
+        final_set = set_combine(final_set,
+                                {range = midcast_set.range or final_set.range})
     end
 
     equip(final_set)
@@ -647,14 +656,15 @@ end
 
 local item_id_memo = setmetatable({}, {
     __index = function(t, k)
-        t[k] = res.items:with('en', k).id
+        t[k] = (res.items:with('en', k) or res.items:with('ja', k)).id
         return t[k]
     end
 })
 local function item_skill(item)
     local item_name = type(item) == 'table' and item.name or item
     local item_id = item_id_memo[item_name]
-    return res.skills[res.items[item_id].skill]
+    return res.skills[res.items[item_id].skill].en,
+           res.skills[res.items[item_id].skill].ja
 end
 local function get_engaged_set()
     local equip_set = sets.engaged
@@ -680,6 +690,7 @@ local function get_engaged_set()
         local main_hand_skill = item_skill(main_hand)
         if equip_set[main_hand_skill] then
             equip_set = equip_set[main_hand_skill]
+            breadcrumbs:append(main_hand_skill)
         end
 
     end
@@ -732,7 +743,7 @@ local function get_engaged_set()
         end
     end
 
-    -- print(breadcrumbs:concat('.'))
+    print(breadcrumbs:concat('.'))
 
     -- If a set is empty, go back up the tree till a set has gear
     if empty_set(equip_set) then -- if it contains no gear
@@ -790,9 +801,10 @@ local function update_gear()
     end
 end
 
-local function aftercast(spell) 
+local function aftercast(spell)
     clear_timeout()
-    if not pet_midaction() then update_gear() end end
+    if not pet_midaction() then update_gear() end
+end
 
 -- TODO: figure out how the haste library fits into this
 local function buff_change(name, gain, buff_details)

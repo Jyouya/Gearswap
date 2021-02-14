@@ -22,7 +22,9 @@ settings.main = M {
     'Naegling',
     'Almace',
     'Maxentius',
-    'Esikuva'
+    'Tauret',
+    -- 'Esikuva'
+    'Qutrub Knife'
 }
 
 local subs = T {
@@ -113,7 +115,9 @@ settings.enfeebling = M {
 }
 
 rules.midcast:append({
-    test = function(equip_set, spell) return spell.skill == 'Enfeebling Magic' end,
+    test = function(equip_set, spell)
+        return spell.skill == 'Enfeebling Magic'
+    end,
     key = function() return settings.enfeebling.value end
 })
 
@@ -156,7 +160,7 @@ local lock_ammo = {
     test = function(equip_set)
         if settings.ullr.value then
             if player.tp > 500 or buffactive['Aftermath: Lv.3'] then
-                equip_set.ammo = 'Empty'
+                equip_set.ammo = empty
             end
         end
     end
@@ -259,7 +263,6 @@ events.load:register(function()
 
     sets.midcast.EnspellTierOne = set_combine(sets.midcast.Temper, {})
 
-    -- ! This set is unused, it exists for combining
     sets.midcast['Enhancing Magic'] = {
         main = gear.Colada.Enhancing,
         sub = 'Ammurapi Shield',
@@ -282,7 +285,8 @@ events.load:register(function()
                 body = "Lethargy Sayon +1",
                 legs = "Leth. Fuseau +1"
             }
-        }
+        },
+        swap_managed_weapon = swap_if_low_tp
     }
 
     sets.midcast.Phalanx = set_combine(sets.midcast['Enhancing Magic'], {
@@ -509,8 +513,7 @@ events.load:register(function()
             {
                 test = saboteur,
                 hands = 'Lethargy Gantherots +1' -- 3  137
-            },
-            {
+            }, {
                 test = swap_if_low_tp, -- If we're not using contemplator, this pushes us up one tier
                 ear1 = 'Enfeebling Earring' -- -17    120
 
@@ -526,7 +529,7 @@ events.load:register(function()
                 test = saboteur,
                 hands = 'Lethargy Gantherots +1' -- 3  137
             }
-        },
+        }
     })
 
     sets.midcast['Frazzle II'] = {
